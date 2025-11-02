@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSIM MAN 1 Medan - Homepage Modern</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="script.js"></script>
+</head>
+<body>
+
+    <div id="main-content"> 
+
+        <header class="navbar">
+            <div class="container">
+                <div class="navbar-brand">
+                    <a href="#" class="logo">
+                        <img src="img/20230928_202130_0000.png" alt="Logo OSIM MAN 1 Medan" class="logo-image">
+                    </a>
+                </div>
+                
+                <button class="menu-toggle" aria-label="Toggle navigation">
+                    &#9776; </button>
+
+                <nav>
+                    <ul id="nav-links">
+                        <li><a href="#" class="active">Home</a></li>
+                        <li><a href="arsip.html" class="active">Arsip Dokumen</a></li>
+                        <li><a href="struktur.html" class="active">Struktur Organisasi</a></li>
+                        <li class="dropdown">
+                            <a href="#" class="dropbtn">Pusat Informasi ▼</a>
+                            <div class="dropdown-content">
+                                <a href="info.html">Pengumuman & Berita</a>
+                                <a href="event.html">Upcoming Events</a>
+                                <a href="kebijakan.html">Peraturan & Kebijakan Siswa</a>
+                            </div>
+                        </li>
+                        
+                        <li><a href="changelog.html">Log Perubahan</a></li>
+                        <li><a href="#kontak">Kontak</a></li>
+                        <li><a href="alumni.html">Alumni</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <section class="hero" id="hero-section">
+        <div class="hero-content">
+            <h1 id="hero-title">Memuat Konten...</h1> 
+            <p id="hero-subtitle">Harap tunggu sebentar...</p>
+            <a href="#tentang" class="cta-button">Selengkapnya</a>
+        </div>
+    </section>
+
+        <section id="tentang" class="content-section">
+            <div class="container">
+                <h2>Tentang Kami</h2>
+                <p class="section-lead" id="about-text">
+                    Memuat deskripsi...
+                </p>
+            </div>
+        </section>
+        
+        <section id="visi-misi" class="content-section feature-section">
+            <div class="container">
+                <h2>Visi & Misi</h2>
+                <div class="card-container">
+                    <div class="card">
+                        <h3>Visi</h3>
+                        <p id="visi-text">Memuat Visi...</p>
+                    </div>
+                    <div class="card">
+                        <h3>Misi</h3>
+                        <p id="misi-text">Memuat Misi...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="koordinator" class="content-section koordinator-section">
+            <div class="container">
+                <h2>Koordinator Bidang</h2>
+                <div class="koorbid-grid" id="koorbid-container">
+                    <p id="koorbid-fallback" class="section-lead">Memuat daftar koordinator...</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="program" class="feature-section"> 
+            <div class="container">
+                <h2>Program Kerja Utama</h2> 
+                <p class="section-lead">Daftar program kerja utama akan diletakkan di sini setelah Koordinator Bidang.</p>
+            </div>
+        </section>
+
+        <section id="sambutan" class="content-section">
+            <div class="container sambutan-container">
+                <h2>Kata Sambutan</h2>
+                <div class="sambutan-content">
+                    
+                    <div id="video-container" class="video-responsive">
+                        <p class="section-lead">Memuat video...</p>
+                    </div>
+
+                    <p id="speech-text" class="section-lead" style="margin-top: 1.5rem;"></p>
+                    
+                    <div class="speaker-info">
+                        <h3 id="speaker-name">Nama Pembicara</h3>
+                        <p id="speaker-title">Jabatan Pembicara</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="galeri" class="content-section gallery-section">
+            <div class="container">
+                <h2>Galeri Kegiatan</h2>
+                <p class="section-lead" id="gallery-lead">
+                    Lihat momen-momen terbaik kami dan jadilah bagian dari cerita kami.
+                </p>
+                
+                <div id="gallery-container" class="gallery-grid">
+                    <p id="gallery-fallback" class="section-lead">Memuat galeri...</p>
+                </div>
+            </div>
+        </section>
+
+        <footer id="kontak">
+            <div class="container footer-grid">
+                
+                <div class="footer-info">
+                    <h3>OSIM MAN 1 MEDAN</h3>
+                    <p>Wadah Aspirasi, Kreativitas, dan Prestasi Siswa.</p>
+                    <p>&copy; 2025. All Rights Reserved.</p>
+                </div>
+                
+                <div class="footer-nav">
+                    <h4>Navigasi</h4>
+                    <p><a href="changelog.html">Log Perubahan</a></p>
+                    <p><a href="#sambutan">Sambutan Kepala Madrasah</a></p>
+                    <p><a href="info.html">Pusat Informasi</a></p>
+                </div>
+
+                <div class="footer-time">
+                    <h4>Status Web</h4>
+                    <div id="system-status-container" class="system-status-indicator">
+                        Memuat Status...
+                    </div>
+                    
+                    <div class="footer-system-status">
+                        <p>Tanggal Terkini:</p>
+                        <p id="live-time">Memuat Waktu...</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </div> 
+
+
+    <div id="detail-content" style="display: none;"> 
+        <div class="detail-wrapper">
+            <button id="back-button" onclick="closeKoorbidDetail()">← Kembali ke Daftar Bidang</button>
+            <div id="koorbid-detail-render"></div>
+        </div>
+    </div> 
+
+   <script src="script.js"></script>
+</body>
+</html>

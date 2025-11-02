@@ -1,0 +1,1477 @@
+/* --- Reset & Global --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Arial', sans-serif;
+    line-height: 1.7;
+    background-color: #f8f9fa; 
+    color: #333;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem; 
+}
+
+h1, h2, h3 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 2.5rem;
+    text-align: center;
+    color: #34495e; 
+    margin-bottom: 0.5rem;
+}
+
+/* Garis Aksen Bawah Heading */
+.content-section h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: #008940;
+    margin: 0.5rem auto 0;
+    border-radius: 2px;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+/* --- 1. Header & Navigasi (Desktop Style) --- */
+.navbar {
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 1.2rem 0;
+    position: sticky; 
+    top: 0;
+    z-index: 1000;
+    border-bottom: 3px solid #008940; 
+}
+
+.navbar .container {
+    /* Pastikan alignment vertikal di tengah */
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+}
+
+/* KODE LOGO/BRANDING */
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    padding: 0; 
+}
+
+.navbar .logo {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #008940; 
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    line-height: 1.1; 
+}
+
+.logo-image {
+    height: 55px; /* Sesuaikan tinggi logo */
+    width: auto;
+    margin-right: 8px; /* Jarak antara logo dan teks diperkecil */
+    object-fit: contain;
+}
+
+/* Sembunyikan Tombol Hamburger di Desktop */
+.menu-toggle {
+    display: none;
+}
+
+.navbar nav ul {
+    display: flex;
+    list-style: none;
+    /* Pastikan daftar menu juga sejajar vertikal */
+    align-items: center; 
+}
+
+.navbar nav li {
+    /* Mengurangi jarak antar menu agar muat satu baris */
+    margin-left: 1.2rem; 
+    position: relative; 
+}
+
+.navbar nav a {
+    padding-top: 5px; 
+    padding-bottom: 5px;
+
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    white-space: nowrap; /* Mencegah teks menu pindah ke baris baru */
+}
+
+.navbar nav a:hover,
+.navbar nav a.active {
+    color: #008940;
+}
+
+/* KODE DROPDOWN */
+.dropbtn {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    padding: 5px 0; 
+    display: block;
+}
+
+.dropbtn:hover {
+    color: #008940;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+    z-index: 1001;
+    border-top: 3px solid #008940; 
+    border-radius: 0 0 5px 5px;
+    top: 35px; 
+    left: 0;
+    padding: 10px 0;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 10px 15px;
+    text-decoration: none;
+    display: block;
+    font-weight: 400;
+    transition: background-color 0.3s;
+    white-space: nowrap; 
+}
+
+.dropdown-content a:hover {
+    background-color: #e6ffe6; 
+    color: #008940;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* --- 2. Hero Section --- */
+.hero {
+    height: 90vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #ffffff; 
+}
+
+.hero-content h1 {
+    font-size: 3.2rem;
+    max-width: 800px;
+    text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5); 
+}
+
+.hero-content p {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: #ffffff;
+    color: #008940;
+    padding: 12px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px); 
+}
+
+/* --- 3. Content Sections & Visi Misi Cards --- */
+.content-section {
+    padding: 5rem 0;
+    text-align: center;
+}
+
+.content-section .section-lead {
+    max-width: 700px;
+    margin: 0 auto 1rem auto;
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.feature-section {
+    padding: 5rem 0;
+    background-color: #f8f9fa; /* Changed to lighter background for cleanliness */
+}
+
+.card-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 3rem;
+    flex-wrap: wrap; 
+    align-items: flex-start;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    width: 45%; 
+    max-width: 500px;
+    text-align: left;
+    border-top: 4px solid #008940; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.card h3 {
+    color: #008940;
+    font-size: 1.4rem;
+}
+
+/* Styling Misi Portable Text */
+.card p {
+    text-align: left;
+}
+
+.card ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    text-align: left;
+}
+
+.card li {
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+
+/* --- 4. KOORDINATOR BIDANG STYLING (MODERN GRID) --- */
+.koordinator-section {
+    background-color: #f8f9fa;
+}
+
+.koorbid-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem; 
+    margin-top: 3rem;
+}
+
+.koorbid-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
+    cursor: pointer;
+    height: 100%;
+}
+
+.koorbid-card:hover {
+    transform: translateY(-5px); 
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); 
+}
+
+.koorbid-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1rem auto;
+    border-radius: 50%;
+    background-color: #e6ffe6; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.koorbid-icon img {
+    max-width: 40px;
+    max-height: 40px;
+    object-fit: contain;
+}
+
+.koorbid-card h3 {
+    font-size: 1.1rem;
+    color: #34495e; 
+    margin-bottom: 0.5rem;
+}
+
+/* --- 5. KATA SAMBUTAN STYLING --- */
+
+.sambutan-content {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* Membuat container video YouTube responsif (rasio 16:9) */
+.video-responsive {
+    overflow: hidden;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    position: relative;
+    height: 0;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.video-responsive iframe {
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+}
+
+.speaker-info h3 {
+    font-size: 1.3rem;
+    color: #34495e;
+    margin-bottom: 0;
+}
+
+.speaker-info p {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+
+/* --- 6. GALERI KEGIATAN STYLING (CAPTION DI LUAR GAMBAR) --- */
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem; 
+    margin-top: 3rem;
+}
+
+.gallery-item {
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden; 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); 
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    position: relative; 
+    display: flex;
+    flex-direction: column;
+}
+
+.gallery-item:hover {
+    transform: translateY(-8px) scale(1.03); 
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2); 
+}
+
+/* CONTAINER BARU UNTUK MEMAKSA RASIO ASPEK (3:2) */
+.gallery-image-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 66.66%; /* Rasio 3:2 */
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.gallery-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    display: block;
+    background-color: #f0f0f0; 
+    transition: transform 0.4s ease; 
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05); 
+}
+
+.gallery-caption-footer { 
+    padding: 1rem 1.2rem;
+    color: #34495e; 
+    text-align: center; 
+    font-weight: 600; 
+    font-size: 1rem; 
+    line-height: 1.4;
+    flex-grow: 1; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    min-height: 50px; 
+    border-top: 1px solid #eee;
+}
+
+.gallery-caption-footer p {
+    margin: 0; 
+    text-align: center;
+}
+
+
+/* --- 7. KOORBID DETAIL PAGE STYLING --- */
+
+#detail-content {
+    min-height: 100vh;
+    padding: 3rem 0;
+    background-color: #f8f9fa; 
+}
+
+.detail-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+#back-button, #back-event-button { 
+    background-color: #008940;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    transition: background-color 0.3s;
+}
+
+#back-button:hover, #back-event-button:hover {
+    background-color: #00642e;
+}
+
+.koorbid-detail-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.detail-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.detail-title {
+    font-size: 2.5rem;
+    color: #34495e;
+    margin-top: 1rem;
+}
+
+.detail-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-top: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.detail-section h3 {
+    color: #008940;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #008940;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.functions-list ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+    text-align: left;
+}
+
+.functions-list li {
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+
+/* --- 8. LOG PERUBAHAN STYLING --- */
+
+.log-section {
+    background-color: #ffffff; 
+}
+
+.changelog-list {
+    max-width: 800px;
+    margin: 3rem auto 0;
+    text-align: left;
+}
+
+.log-entry {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    background-color: #fff; 
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); 
+    border: 1px solid #eee; 
+    transition: box-shadow 0.3s;
+}
+
+.log-entry:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.log-entry:last-child {
+    margin-bottom: 0;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    border-bottom: 1px dashed #ddd; 
+    padding-bottom: 0.75rem;
+}
+
+.log-feature {
+    font-size: 1.2rem; 
+    font-weight: 700; 
+    color: #008940; 
+    margin-right: 1rem;
+}
+
+.log-date {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: normal;
+    white-space: nowrap;
+}
+
+.log-status {
+    display: inline-block;
+    padding: 4px 10px; 
+    border-radius: 20px; 
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 1rem; 
+    text-transform: uppercase;
+}
+
+/* Warna Status */
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-in_progress {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-updated {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.log-description {
+    font-size: 0.95rem;
+    color: #555;
+    margin-top: 1rem;
+    line-height: 1.5;
+}
+
+
+/* --- 9. PUSAT INFORMASI STYLING --- */
+
+.info-section {
+    background-color: #ffffff;
+}
+
+.info-list {
+    max-width: 900px;
+    margin: 3rem auto 0;
+    text-align: left;
+}
+
+.info-card {
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    border-left: 5px solid #008940; 
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.info-card:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+}
+
+.info-title {
+    font-size: 1.3rem;
+    color: #34495e;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.info-snippet {
+    font-size: 0.95rem; 
+    color: #555; 
+    margin: 0.5rem 0 0.8rem 0;
+}
+
+.info-date {
+    font-size: 0.85rem;
+    color: #999;
+    font-style: italic;
+}
+
+.click-indicator {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #008940; 
+    margin-top: 0.5rem;
+}
+
+
+/* --- 10. FOOTER (REVISI FINAL UI - LIGHT MODE) --- */
+footer {
+    background-color: #ffffff; 
+    color: #34495e; 
+    padding: 3rem 0;
+    margin-top: 5rem; 
+    border-top: 1px solid #eee; 
+}
+
+.footer-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    text-align: left;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.footer-grid > div { 
+    padding: 0 1rem;
+    min-width: 180px;
+    margin-bottom: 2rem;
+}
+
+/* Kolom Kiri (Logo & Info) */
+.footer-info {
+    max-width: 300px;
+}
+.footer-info h3 {
+    font-size: 1.5rem; 
+    color: #008940; 
+    margin-bottom: 0.8rem;
+}
+.footer-info p {
+    font-size: 0.85rem;
+    color: #6c757d; 
+    margin: 0;
+    margin-top: 0.5rem;
+}
+
+/* Judul Kolom Tengah dan Kanan */
+.footer-grid h4 { 
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #34495e; 
+    margin-bottom: 1rem;
+}
+
+.footer-nav p {
+    margin: 0.5rem 0;
+}
+
+.footer-nav a {
+    color: #34495e; 
+    text-decoration: none;
+    transition: color 0.3s;
+    font-size: 0.95rem;
+}
+
+.footer-nav a:hover {
+    color: #008940;
+    text-decoration: underline;
+}
+
+/* Kolom Status Sistem */
+.footer-system-status {
+    border-top: 1px solid #ddd; 
+    padding-top: 0.75rem;
+    margin-top: 1rem;
+}
+
+.system-status-indicator {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #008940; 
+    display: flex;
+    align-items: center;
+}
+
+/* Green Dot untuk System Status */
+.system-status-indicator::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #04AA6D; 
+    border-radius: 50%;
+    margin-right: 8px;
+    box-shadow: 0 0 5px #04AA6D; 
+}
+
+/* Live Time Styling */
+.footer-time p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+}
+
+#live-time {
+    color: #008940; 
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+
+/* --- 12. EVENT MENDATANG STYLING --- */
+
+#event-detail-content .detail-wrapper {
+    padding-top: 3rem; 
+}
+
+.event-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.event-card {
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-top: 5px solid #008940;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.event-image-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* Rasio 16:9 */
+    overflow: hidden;
+}
+
+.event-image-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.event-card:hover .event-image-wrapper img {
+    transform: scale(1.05);
+}
+
+.event-content {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.event-content h3 {
+    font-size: 1.4rem;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.event-content p {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.event-location {
+    font-weight: 600;
+    color: #008940;
+}
+
+/* COUNTDOWN STYLING */
+.countdown-container {
+    background-color: #008940;
+    color: #ffffff;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0 0 10px 10px; 
+    text-align: center;
+    margin-top: auto; 
+    font-weight: 700;
+}
+
+.countdown-timer {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.countdown-unit {
+    font-size: 1.5rem; 
+    line-height: 1;
+}
+
+.countdown-unit span {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+
+/* DETAIL EVENT STYLING */
+#event-detail-content .detail-wrapper {
+    padding-top: 3rem; 
+}
+
+#event-detail-render .detail-section {
+    padding: 3rem; 
+}
+
+#event-detail-render .detail-section h2 {
+    text-align: left;
+    margin-top: 0;
+}
+
+.detail-location {
+    font-size: 1.2rem;
+    color: #008940;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.detail-description-content h3 {
+    color: #34495e;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-top: 2rem;
+}
+
+.detail-image-full {
+    max-width: 80%; /* Batasi lebar maksimal gambar/poster */
+    height: auto;
+    display: block; /* Agar margin auto berfungsi */
+    margin: 1.5rem auto; /* Tengahkankan gambar */
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* --- 13. ARSIP DOKUMEN STYLING --- */
+
+.arsip-filter-container {
+    max-width: 900px;
+    margin: 3rem auto 1.5rem auto;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-weight: 500;
+    color: #34495e;
+}
+
+#masa-jabatan-filter {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+#masa-jabatan-filter:focus {
+    border-color: #008940;
+    outline: none;
+}
+
+.arsip-list-grid {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.arsip-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid #008940;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.arsip-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.arsip-card h3 {
+    font-size: 1.2rem;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+}
+
+.arsip-meta {
+    font-size: 0.9rem;
+    color: #008940;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.arsip-description {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+.download-button {
+    display: inline-block;
+    background-color: #008940;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s;
+    margin-top: auto; 
+}
+
+.download-button:hover {
+    background-color: #00642e;
+}
+
+
+/* --- 14. STRUKTUR ORGANISASI STYLING (NEW) --- */
+
+/* KOREKSI: Member-grid sekarang hanya untuk Divisi */
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.struktur-group {
+    margin-bottom: 3rem; 
+    text-align: center; 
+}
+
+.struktur-sub-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* GRID INTI UTAMA: MAKSIMAL 3 KOLOM PER BARIS */
+.core-leadership-grid,
+.core-secretariat-grid {
+    /* 3 Anggota per baris */
+    grid-template-columns: repeat(3, 1fr); 
+    max-width: 900px; 
+    margin: 0 auto;
+    /* TAMBAHAN: Copy gap dari .member-grid */
+    gap: 1.5rem;
+    display: grid; 
+}
+
+.core-treasury-grid {
+    /* 2 Anggota per baris, kita set 3 kolom agar rapi saat 3 atau kurang */
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 600px; 
+    margin: 0 auto;
+    /* TAMBAHAN: Copy gap dari .member-grid */
+    gap: 1.5rem;
+    display: grid; 
+}
+
+/* ... (lanjutan styling member-card, division-group, dll.) ... */
+
+/* ... (lanjutan styling member-card, division-group, dll.) ... */
+
+.member-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.member-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.member-photo-wrapper {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 0.8rem;
+    border: 4px solid #008940; 
+}
+
+.member-photo-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-card h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #34495e;
+    margin-bottom: 0.2rem;
+}
+
+.member-card p {
+    font-size: 0.9rem;
+    color: #008940;
+    font-weight: 600;
+    margin-bottom: 0;
+    line-height: 1.2;
+}
+
+.division-group h3 {
+    text-align: left;
+    font-size: 1.8rem;
+    color: #008940;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+}
+
+.division-group .member-grid {
+    margin-top: 0;
+}
+
+/* --- 11. MEDIA QUERY: Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    /* Navbar Fixes */
+    .navbar .logo {
+        order: 1;
+    }
+    .menu-toggle {
+        display: block;
+        background: none;
+        border: none;
+        color: #008940; 
+        font-size: 2rem;
+        cursor: pointer;
+        padding: 0; 
+        order: 3;
+    }
+    .navbar nav {
+        order: 2; 
+        width: 0; 
+        overflow: hidden; 
+    }
+    .navbar nav ul {
+        display: none;
+        width: 100%; 
+        position: absolute; 
+        top: 65px; 
+        left: 0;
+        background-color: #ffffff;
+        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.05);
+        border-top: 1px solid #eee;
+        z-index: 999; 
+        flex-direction: column; 
+    }
+    .navbar nav ul.active {
+        display: flex;
+    }
+    .navbar nav li {
+        margin: 0;
+        text-align: center;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .navbar nav li:last-child {
+        border-bottom: none;
+    }
+    .navbar nav a {
+        display: block;
+        padding: 1rem 0;
+    }
+    
+    /* Mobile Dropdown Fixes */
+    .dropdown .dropbtn {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0; 
+    }
+    
+    .dropdown:hover .dropdown-content,
+    .dropdown-content {
+        position: static; 
+        box-shadow: none;
+        border-top: none;
+        border-radius: 0;
+        width: 100%;
+        min-width: auto;
+        padding: 0;
+        display: none; 
+    }
+    
+    .dropdown:hover .dropdown-content {
+        display: block; 
+    }
+    
+    .dropdown-content a {
+        padding-left: 30px; 
+        background-color: #fafafa;
+        font-size: 0.9rem;
+    }
+
+    /* Font Size Fixes */
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+
+    /* Grid Mobile Fixes */
+    .koorbid-grid,
+    .gallery-grid,
+    .event-list-grid,
+    .arsip-list-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Struktur Organisasi Mobile Fixes */
+    .core-leadership-grid,
+    .core-secretariat-grid,
+    .core-treasury-grid {
+        grid-template-columns: 1fr 1fr;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    .member-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .gallery-image-wrapper {
+        padding-top: 75%; 
+    }
+
+    /* Visi Misi Mobile Fix */
+    .card {
+        width: 100%;
+        max-width: none;
+    }
+
+    /* Footer Mobile Fix */
+    .footer-grid {
+        flex-direction: column;
+        text-align: center;
+    }
+    .footer-grid > div {
+        text-align: center;
+        min-width: 100%;
+        padding: 0;
+    }
+    .footer-info h3 {
+        text-align: center;
+    }
+    .footer-system-status {
+        text-align: center;
+        width: 100%;
+        border-top: none;
+    }
+    .system-status-indicator {
+        justify-content: center;
+    }
+}
+
+/* public/style.css (TAMBAHKAN DI AKHIR) */
+
+/* --- 15. KEBIJAKAN SEKOLAH STYLING (NEW) --- */
+
+.policy-container {
+    max-width: 900px;
+    margin: 3rem auto 0;
+    text-align: left;
+}
+
+.policy-category-group {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+}
+
+.policy-category-group h3 {
+    background-color: #008940;
+    color: white;
+    padding: 1rem 1.5rem;
+    margin-bottom: 0;
+    font-size: 1.5rem;
+    border-bottom: none;
+    text-align: left;
+}
+
+.policy-rule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+}
+
+.policy-rule-table th, 
+.policy-rule-table td {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.policy-rule-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #34495e;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.policy-rule-table td:last-child {
+    width: 100px; /* Lebar kolom poin */
+    font-weight: 700;
+    text-align: center;
+    color: #ff0000; /* Warna merah untuk pengurangan poin */
+}
+
+.policy-rule-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* --- 16. MAINTENANCE MODE STYLING (NEW) --- */
+
+.maintenance-body {
+    background-color: #397c55; /* Warna gelap dramatis */
+    color: #ecf0f1;
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0;
+}
+
+.maintenance-container {
+    max-width: 600px;
+    padding: 3rem;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.2); /* Sedikit transparansi */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.maintenance-title {
+    font-size: 2rem;
+    color: #fafafa; /* Aksen hijau */
+    margin-bottom: 0.5rem;
+}
+
+.maintenance-subtitle {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+    color: #ccc;
+}
+
+.maintenance-message {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.maintenance-details {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+    margin-top: 1rem;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.maintenance-footer {
+    margin-top: 3rem;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* --- 17. ALUMNI CONNECT STYLING (NEW) --- */
+
+/* Peta Persebaran */
+.map-container-style {
+    height: 450px;
+    width: 100%;
+    margin: 3rem auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    background-color: #f0f0f0;
+    overflow: hidden;
+    /* Styling tambahan untuk placeholder */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-image: linear-gradient(135deg, #00894040 25%, transparent 25%, transparent 50%, #00894040 50%, #00894040 75%, transparent 75%, transparent);
+    background-size: 40px 40px;
+}
+
+/* Direktori Alumni */
+.alumni-directory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.alumni-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 4px solid #008940;
+}
+
+.alumni-photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 0.8rem;
+    border: 3px solid #008940;
+}
+
+.alumni-card h4 {
+    font-size: 1.2rem;
+    color: #34495e;
+    margin-bottom: 0.2rem;
+}
+
+.alumni-card p {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.alumni-job {
+    font-weight: 600;
+    color: #008940;
+}
+
+/* Formulir Pengajuan */
+.alumni-form-style {
+    max-width: 550px;
+    margin: 3rem auto 0;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.alumni-form-style label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #34495e;
+}
+
+.alumni-form-style input[type="text"],
+.alumni-form-style input[type="email"],
+.alumni-form-style input[type="tel"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.alumni-form-style input[type="file"] {
+    padding: 5px 0;
+}
+
+.alumni-form-style small {
+    display: block;
+    color: #999;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+}

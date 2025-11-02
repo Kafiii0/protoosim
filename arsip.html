@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSIM MAN 1 Medan - Arsip Dokumen</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="script.js"></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="index.html" class="logo">
+                    <img src="img/20230928_202130_0000.png" alt="Logo OSIM MAN 1 Medan" class="logo-image">
+                    
+                </a>
+            </div>
+            
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                &#9776; </button>
+
+            <nav>
+                <ul id="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropbtn">Pusat Informasi ▼</a>
+                        <div class="dropdown-content">
+                            <a href="info.html">Pengumuman & Berita</a>
+                            <a href="event.html">Upcoming Events</a>
+                        </div>
+                    </li>
+                    <li><a href="changelog.html">Log Perubahan</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section id="arsip-dokumen" class="content-section" style="padding-top: 3rem;">
+        <div class="container">
+            <h2>Arsip Dokumen</h2>
+            <p class="section-lead">Dokumen Anggaran Dasar dan Anggaran Rumah Tangga (AD/ART) OSIM MAN 1 Medan dari masa ke masa.</p>
+            
+            <div class="arsip-filter-container">
+                <label for="masa-jabatan-filter">Filter Masa Jabatan:</label>
+                <select id="masa-jabatan-filter" onchange="filterArchive()">
+                    </select>
+            </div>
+
+            <div id="arsip-list-container" class="arsip-list-grid">
+                <p class="section-lead">Memuat dokumen arsip...</p>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-info">
+                <h3>OSIM MAN 1 MEDAN</h3>
+                <p>Wadah Aspirasi, Kreativitas, dan Prestasi Siswa.</p>
+                <p>&copy; 2025. All Rights Reserved.</p>
+            </div>
+            <div class="footer-nav">
+                <h4>Navigasi</h4>
+                <p><a href="changelog.html">Log Perubahan</a></p>
+                <p><a href="index.html#sambutan">Sambutan Kepala Madrasah</a></p>
+            </div>
+            <div class="footer-time">
+                <h4>Status Web</h4>
+                <div id="system-status-container" class="system-status-indicator">
+                    Memuat Status...
+                </div>
+                <div class="footer-system-status">
+                    <p>Tanggal Terkini:</p>
+                    <p id="live-time">Memuat Waktu...</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+   <script src="script.js"></script>
+
+</body>
+</html>
