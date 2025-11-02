@@ -1,4 +1,4 @@
-// public/script.js (KODE LENGKAP FINAL DENGAN AKTIVASI BACKEND FORM)
+// public/script.js (KODE LENGKAP FINAL DAN KONSOLIDASI)
 
 // --- SANITY CONFIGURATION ---
 const projectId = 'a9t5rw7s'; // GANTI DENGAN PROJECT ID KAMU JIKA BERBEDA
@@ -8,6 +8,7 @@ const apiUrl = `https://${projectId}.api.sanity.io/${apiVersion}/data/query/${da
 
 // GROQ Queries
 const groqHomepageQuery = encodeURIComponent(
+    // PASTIKAN isMaintenanceMode di-fetch di sini
     `*[_type == "homepage"][0]{isMaintenanceMode, heroTitle, heroSubtitle, heroImage, aboutUsText, visionText, missionText}` 
 );
 
@@ -526,6 +527,8 @@ async function fetchInformationPosts() {
 
         const result = await response.json();
         const infoList = result.result;
+
+        infoContainer.innerHTML = ''; 
 
         if (infoList.length === 0) {
             infoContainer.innerHTML = '<p class="section-lead">Belum ada informasi yang dipublikasikan.</p>';
