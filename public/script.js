@@ -1,4 +1,4 @@
-// public/script.js (KODE LENGKAP FINAL DAN KONSOLIDASI)
+// public/script.js (KODE LENGKAP FINAL DENGAN AKTIVASI BACKEND FORM)
 
 // --- SANITY CONFIGURATION ---
 const projectId = 'a9t5rw7s'; // GANTI DENGAN PROJECT ID KAMU JIKA BERBEDA
@@ -8,7 +8,6 @@ const apiUrl = `https://${projectId}.api.sanity.io/${apiVersion}/data/query/${da
 
 // GROQ Queries
 const groqHomepageQuery = encodeURIComponent(
-    // PASTIKAN isMaintenanceMode di-fetch di sini
     `*[_type == "homepage"][0]{isMaintenanceMode, heroTitle, heroSubtitle, heroImage, aboutUsText, visionText, missionText}` 
 );
 
@@ -527,8 +526,6 @@ async function fetchInformationPosts() {
 
         const result = await response.json();
         const infoList = result.result;
-
-        infoContainer.innerHTML = ''; 
 
         if (infoList.length === 0) {
             infoContainer.innerHTML = '<p class="section-lead">Belum ada informasi yang dipublikasikan.</p>';
@@ -1285,7 +1282,7 @@ async function fetchAlumniDirectory() {
     }
 }
 
-// FUNGSI FORM SUBMISSION (PUBLIC FACING STRUCTURE)
+// FUNGSI FORM SUBMISSION (AKTIVASI BACKEND ENDPOINT)
 async function handleAlumniApplication(event) {
     event.preventDefault();
     const form = event.target;
@@ -1297,7 +1294,6 @@ async function handleAlumniApplication(event) {
     formMessage.style.color = '#856404';
     formMessage.innerText = 'Memproses data dan memvalidasi file...';
 
-    const fullName = form.fullName.value;
     const graduationProofFile = form.graduationProof.files[0];
 
     if (!graduationProofFile) {
@@ -1306,18 +1302,35 @@ async function handleAlumniApplication(event) {
         return;
     }
     
-    // --- SIMULASI INTEGRASI BACKEND AMAN ---
-    
-    formMessage.style.color = '#155724';
-    formMessage.innerText = '✅ Pengajuan Berhasil Diterima! Data Anda telah divalidasi dan dikirim ke API yang aman untuk ditinjau oleh admin.';
-    
-    // Instruksi Penting
-    setTimeout(() => {
-        formMessage.style.color = '#004085';
-        formMessage.innerText = `PENTING: Form ini berhasil divalidasi. Untuk koneksi nyata ke Sanity (Write/Upload), Anda harus membuat ${fullName}_BACKEND_ENDPOINT yang aman.`;
-        form.reset();
+    // Gunakan FormData untuk mengirim data formulir dan file secara sekaligus
+    const formData = new FormData(form);
+
+    try {
+        // PANGGIL ENDPOINT SERVERLESS VERCEL
+        const response = await fetch('/api/submit-alumni', { 
+            method: 'POST',
+            body: formData, // FormData akan otomatis mengatur Content-Type: multipart/form-data
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // SUCCESS
+            formMessage.style.color = '#155724';
+            formMessage.innerText = '✅ Pengajuan berhasil dikirim! Silakan tunggu peninjauan admin.';
+            form.reset();
+        } else {
+            // FAILURE (Error 400/500 dari Vercel endpoint)
+            formMessage.style.color = '#dc3545';
+            formMessage.innerText = `❌ Gagal mengirim pengajuan. Pesan: ${result.message || 'Terjadi kesalahan pada server (Endpoint Vercel).'}`;
+        }
+    } catch (err) {
+        // CATCH Network error
+        formMessage.style.color = '#dc3545';
+        formMessage.innerText = '❌ Gagal terhubung ke server. Periksa koneksi atau deployment Serverless Function.';
+    } finally {
         submitBtn.disabled = false;
-    }, 2000);
+    }
 }
 
 
