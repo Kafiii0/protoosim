@@ -84,26 +84,61 @@
                 <p class="section-lead">Ajukan diri Anda untuk bergabung ke direktori resmi alumni MAN 1 Medan. **Surat Keterangan Lulus (SKL) WAJIB dilampirkan** sebagai bukti sah.</p>
                 
                 <form id="alumni-application-form" class="alumni-form-style">
-                    <div class="form-group">
-                        <label for="fullName">Nama Lengkap:</label>
-                        <input type="text" id="fullName" name="fullName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contactEmail">Email Kontak:</label>
-                        <input type="email" id="contactEmail" name="contactEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contactPhone">Nomor Telepon:</label>
-                        <input type="tel" id="contactPhone" name="contactPhone">
-                    </div>
-                    <div class="form-group">
-                        <label for="graduationProof">Surat Keterangan Lulus/Ijazah (PDF/JPG):</label>
-                        <input type="file" id="graduationProof" name="graduationProof" accept=".pdf,.jpg,.jpeg,.png" required>
-                        <small>Dokumen ini akan ditinjau oleh admin sebagai bukti sah kelulusan.</small>
-                    </div>
-                    <button type="submit" class="cta-button" id="submit-alumni-form">Kirim Pengajuan</button>
-                    <p id="form-message" class="section-lead" style="margin-top: 1rem; display: none;"></p>
-                </form>
+    <div class="form-group">
+        <label for="fullName">Nama Lengkap:</label>
+        <input type="text" id="fullName" name="fullName" required>
+    </div>
+    <div class="form-group">
+        <label for="contactEmail">Email Kontak:</label>
+        <input type="email" id="contactEmail" name="contactEmail" required>
+    </div>
+    <div class="form-group">
+        <label for="contactPhone">Nomor Telepon:</label>
+        <input type="tel" id="contactPhone" name="contactPhone">
+    </div>
+    <div class="form-group">
+        <label for="socialMedia">Link Social Media (Instagram/LinkedIn):</label>
+        <input type="url" id="socialMedia" name="socialMedia">
+    </div>
+
+    <hr style="margin: 2rem 0; border-color: #eee;">
+    
+    <div class="form-group">
+        <label for="currentEducationInstitution">Institusi Pendidikan Saat Ini (Universitas, dll.):</label>
+        <input type="text" id="currentEducationInstitution" name="currentEducationInstitution">
+    </div>
+    <div class="form-group">
+        <label for="institutionAddress">Alamat Institusi (Kota/Provinsi):</label>
+        <input type="text" id="institutionAddress" name="institutionAddress">
+    </div>
+    <div class="form-group">
+        <label for="major">Jurusan / Fakultas:</label>
+        <input type="text" id="major" name="major">
+    </div>
+
+    <hr style="margin: 2rem 0; border-color: #eee;">
+
+    <div class="form-group">
+        <label for="graduationProof">Surat Keterangan Lulus/Ijazah MAN 1 Medan (PDF/JPG):</label>
+        <input type="file" id="graduationProof" name="graduationProof" accept=".pdf,.jpg,.jpeg,.png" required>
+        <small>Bukti kelulusan dari MAN 1 Medan (WAJIB). Dokumen ini akan ditinjau oleh admin.</small>
+    </div>
+
+    <div class="form-group">
+        <label for="uniGraduationProof">Bukti Kelulusan Kampus Saat Ini (Ijazah Kampus/KTM):</label>
+        <input type="file" id="uniGraduationProof" name="uniGraduationProof" accept=".pdf,.jpg,.jpeg,.png">
+        <small>Bukti kelulusan/status mahasiswa dari institusi pendidikan saat ini.</small>
+    </div>
+
+    <div class="form-group">
+        <label for="formalProfilePhoto">Foto Profil Formal (Untuk Direktori):</label>
+        <input type="file" id="formalProfilePhoto" name="formalProfilePhoto" accept=".jpg,.jpeg,.png">
+        <small>Foto terbaik Anda yang akan dipajang di website.</small>
+    </div>
+    
+    <button type="submit" class="cta-button" id="submit-alumni-form">Kirim Pengajuan</button>
+    <p id="form-message" class="section-lead" style="margin-top: 1rem; display: none;"></p>
+</form>
             </div>
         </section>
     </div>
