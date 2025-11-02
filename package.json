@@ -1,0 +1,14 @@
+{
+  "name": "osim-man1-medan-web",
+  "version": "1.0.0",
+  "description": "Frontend dan Backend API untuk website OSIM MAN 1 Medan.",
+  "main": "public/index.html",
+  "scripts": {
+    "start": "echo 'Frontend is static; API is handled by Vercel'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@sanity/client": "^6.10.0",
+    "formidable": "^3.5.1"
+  }
+}
