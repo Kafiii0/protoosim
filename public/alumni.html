@@ -9,7 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <script src="script.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
 </head>
 <body>
 
@@ -18,8 +21,7 @@
             <div class="navbar-brand">
                 <a href="index.html" class="logo">
                     <img src="img/20230928_202130_0000.png" alt="Logo OSIM MAN 1 Medan" class="logo-image">
-
-                </a>
+                    </a>
             </div>
             
             <button class="menu-toggle" aria-label="Toggle navigation">
@@ -31,15 +33,6 @@
                     <li><a href="index.html#tentang">Tentang Kami</a></li>
                     <li><a href="kebijakan.html">Kebijakan Sekolah</a></li>
                     <li class="dropdown">
-                        <a href="#" class="dropbtn">Struktur & Bidang ▼</a>
-                        <div class="dropdown-content">
-                            <a href="struktur.html">Struktur Organisasi</a>
-                            <a href="index.html#koordinator">Koordinator Bidang</a>
-                        </div>
-                    </li>
-                    <li><a href="index.html#sambutan">Sambutan</a></li>
-                    <li><a href="index.html#galeri">Galeri</a></li>
-                    <li class="dropdown">
                         <a href="#" class="dropbtn">Pusat Informasi ▼</a>
                         <div class="dropdown-content">
                             <a href="info.html">Pengumuman & Berita</a>
@@ -48,7 +41,8 @@
                     </li>
                     <li><a href="changelog.html">Log Perubahan</a></li>
                     <li><a href="arsip.html">Arsip</a></li>
-                    <li><a href="alumni.html" class="active">Alumni</a></li> <li><a href="index.html#kontak">Kontak</a></li>
+                    <li><a href="alumni.html" class="active">Alumni</a></li> 
+                    <li><a href="index.html#kontak">Kontak</a></li>
                 </ul>
             </nav>
         </div>
@@ -81,39 +75,42 @@
         <section id="alumni-form" class="content-section">
             <div class="container">
                 <h2>Daftar Jadi Alumni Resmi</h2>
-                <p class="section-lead">Ajukan diri Anda untuk bergabung ke direktori resmi alumni MAN 1 Medan. **Surat Keterangan Lulus (SKL) WAJIB dilampirkan** sebagai bukti sah.</p>
+                <p class="section-lead">Ajukan diri Anda untuk bergabung ke direktori resmi alumni MAN 1 Medan. Surat Keterangan Lulus (SKL) WAJIB dilampirkan sebagai bukti sah.</p>
                 
-                <form id="alumni-application-form" class="alumni-form-style">
+       <form id="alumni-application-form" class="alumni-form-style">
     <div class="form-group">
         <label for="fullName">Nama Lengkap:</label>
-        <input type="text" id="fullName" name="fullName" required>
+        <input type="text" id="fullName" name="fullName" placeholder="Contoh: Muhammad Fahri Al Kahfi" required>
+        <small>Isi nama lengkap sesuai ijazah MAN 1 Medan.</small>
     </div>
     <div class="form-group">
         <label for="contactEmail">Email Kontak:</label>
-        <input type="email" id="contactEmail" name="contactEmail" required>
+        <input type="email" id="contactEmail" name="contactEmail" placeholder="Contoh: fahri.kahfi@email.com" required>
     </div>
     <div class="form-group">
         <label for="contactPhone">Nomor Telepon:</label>
-        <input type="tel" id="contactPhone" name="contactPhone">
+        <input type="tel" id="contactPhone" name="contactPhone" placeholder="Contoh: 081234567890">
     </div>
     <div class="form-group">
         <label for="socialMedia">Link Social Media (Instagram/LinkedIn):</label>
-        <input type="url" id="socialMedia" name="socialMedia">
+        <input type="url" id="socialMedia" name="socialMedia" placeholder="Contoh: https://linkedin.com/in/fahrikahfi">
     </div>
 
     <hr style="margin: 2rem 0; border-color: #eee;">
     
     <div class="form-group">
         <label for="currentEducationInstitution">Institusi Pendidikan Saat Ini (Universitas, dll.):</label>
-        <input type="text" id="currentEducationInstitution" name="currentEducationInstitution">
+        <input type="text" id="currentEducationInstitution" name="currentEducationInstitution" placeholder="Contoh: Universitas Telkom, Politeknik XYZ">
+        <small>Tuliskan nama kampus/institusi pendidikan saat ini.</small>
     </div>
     <div class="form-group">
         <label for="institutionAddress">Alamat Institusi (Kota/Provinsi):</label>
-        <input type="text" id="institutionAddress" name="institutionAddress">
+        <input type="text" id="institutionAddress" name="institutionAddress" placeholder="Contoh: Bandung, Jawa Barat">
+        <small>Cukup tuliskan Kota dan Provinsi agar mudah dipetakan.</small>
     </div>
     <div class="form-group">
         <label for="major">Jurusan / Fakultas:</label>
-        <input type="text" id="major" name="major">
+        <input type="text" id="major" name="major" placeholder="Contoh: Teknik Informatika / Fakultas Ekonomi">
     </div>
 
     <hr style="margin: 2rem 0; border-color: #eee;">
@@ -121,19 +118,19 @@
     <div class="form-group">
         <label for="graduationProof">Surat Keterangan Lulus/Ijazah MAN 1 Medan (PDF/JPG):</label>
         <input type="file" id="graduationProof" name="graduationProof" accept=".pdf,.jpg,.jpeg,.png" required>
-        <small>Bukti kelulusan dari MAN 1 Medan (WAJIB). Dokumen ini akan ditinjau oleh admin.</small>
+        <small>Dokumen ini WAJIB diunggah sebagai bukti kelulusan sah dari MAN 1 Medan.</small>
     </div>
 
     <div class="form-group">
         <label for="uniGraduationProof">Bukti Kelulusan Kampus Saat Ini (Ijazah Kampus/KTM):</label>
         <input type="file" id="uniGraduationProof" name="uniGraduationProof" accept=".pdf,.jpg,.jpeg,.png">
-        <small>Bukti kelulusan/status mahasiswa dari institusi pendidikan saat ini.</small>
+        <small>Kartu Tanda Mahasiswa (KTM) atau surat penerimaan kampus (Opsional).</small>
     </div>
 
     <div class="form-group">
         <label for="formalProfilePhoto">Foto Profil Formal (Untuk Direktori):</label>
         <input type="file" id="formalProfilePhoto" name="formalProfilePhoto" accept=".jpg,.jpeg,.png">
-        <small>Foto terbaik Anda yang akan dipajang di website.</small>
+        <small>Foto terbaik Anda yang akan dipajang di website. (Maks 1MB, Opsional).</small>
     </div>
     
     <button type="submit" class="cta-button" id="submit-alumni-form">Kirim Pengajuan</button>
@@ -168,5 +165,7 @@
         </div>
     </footer>
 
-    </body>
+    <script src="script.js"></script>
+
+</body>
 </html>
