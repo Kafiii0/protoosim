@@ -1247,18 +1247,54 @@ function renderAlumniMap(alumniList) {
         <p>Anda telah mengimplementasikan struktur data untuk fitur ini (GeoPoint). Untuk menampilkannya di sini, Anda memerlukan library peta eksternal (seperti Leaflet) dan mengintegrasikan GeoJSON dari Sanity.</p>
     `;
 
-    mapEl.style.backgroundImage = `url('https://placehold.co/800x450/e0e0e0/34495e?text=MAP+INDONESIA')`;
-    mapEl.style.backgroundSize = 'cover';
-    mapEl.style.display = 'flex';
-    mapEl.style.alignItems = 'center';
-    mapEl.style.justifyContent = 'center';
-    mapEl.style.padding = '20px';
-    mapEl.style.textAlign = 'center';
-    mapEl.innerHTML = `
-        <div style="background:rgba(255,255,255,0.9); padding:20px; border-radius:8px; width: 80%;">
-            ${mapInfo}
-        </div>
-    `;
+    // Pastikan innerHTML hanya diisi dengan pesan placeholder jika Leaflet belum dimuat
+    if (typeof L === 'undefined') {
+        mapEl.innerHTML = `
+            <div style="background:rgba(255,255,255,0.9); padding:20px; border-radius:8px; width: 80%;">
+                ${mapInfo}
+            </div>
+        `;
+        return;
+    }
+
+    // FUNGSI AKTUAL UNTUK PETA LEAFLET
+    let alumniMap = null;
+    if (mapEl.querySelector('.leaflet-container')) {
+        // Hapus map lama jika sudah ada container Leaflet
+        mapEl.innerHTML = '';
+    }
+
+    // 1. INISIALISASI PETA
+    alumniMap = L.map('map-container').setView([-2.5, 118.0], 5); 
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM Contributors</a>',
+        maxZoom: 18,
+    }).addTo(alumniMap);
+    
+    // 2. TAMBAHKAN MARKER
+    let markerCount = 0;
+    
+    geoPoints.forEach(alumni => {
+        const lat = alumni.coordinates.lat;
+        const lng = alumni.coordinates.lng;
+        
+        const popupContent = `
+            <b>${alumni.name}</b><br>
+            Lulus: ${alumni.graduationYear}<br>
+            Pekerjaan: ${alumni.currentJob || 'Belum Diatur'}<br>
+            Lokasi: ${alumni.currentLocation || 'N/A'}
+        `;
+
+        L.marker([lat, lng])
+            .addTo(alumniMap)
+            .bindPopup(popupContent);
+            
+        markerCount++;
+    });
+    
+    // Status marker di console (opsional, untuk debugging)
+    console.log(`Peta alumni dimuat dengan ${markerCount} marker.`);
 }
 
 async function fetchAlumniDirectory() {
