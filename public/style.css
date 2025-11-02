@@ -1380,13 +1380,6 @@ footer {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     background-color: #f0f0f0;
     overflow: hidden;
-    /* Styling tambahan untuk placeholder */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background-image: linear-gradient(135deg, #00894040 25%, transparent 25%, transparent 50%, #00894040 50%, #00894040 75%, transparent 75%, transparent);
-    background-size: 40px 40px;
 }
 
 /* Direktori Alumni */
@@ -1433,6 +1426,8 @@ footer {
     color: #008940;
 }
 
+/* public/style.css (PERBAIKAN STYLING INPUT FORM) */
+
 /* Formulir Pengajuan */
 .alumni-form-style {
     max-width: 550px;
@@ -1444,7 +1439,7 @@ footer {
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.8rem; /* Spasi antar grup ditingkatkan */
     text-align: left;
 }
 
@@ -1457,12 +1452,23 @@ footer {
 
 .alumni-form-style input[type="text"],
 .alumni-form-style input[type="email"],
-.alumni-form-style input[type="tel"] {
+.alumni-form-style input[type="tel"],
+.alumni-form-style input[type="url"] { /* Tambahan type url */
     width: 100%;
-    padding: 10px;
+    padding: 12px 10px; /* Padding ditingkatkan */
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 8px; /* Sudut lebih membulat */
     font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.alumni-form-style input[type="text"]:focus,
+.alumni-form-style input[type="email"]:focus,
+.alumni-form-style input[type="tel"]:focus,
+.alumni-form-style input[type="url"]:focus {
+    border-color: #008940;
+    box-shadow: 0 0 0 3px rgba(0, 137, 64, 0.2); /* Efek fokus hijau */
+    outline: none;
 }
 
 .alumni-form-style input[type="file"] {
@@ -1471,7 +1477,7 @@ footer {
 
 .alumni-form-style small {
     display: block;
-    color: #999;
+    color: #777; /* Warna keterangan lebih soft */
     font-size: 0.85rem;
     margin-top: 0.3rem;
 }
