@@ -1,4 +1,4 @@
-// public/script.js (KODE LENGKAP FINAL DAN KONSOLIDASI)
+// public/script.js (KODE LENGKAP FINAL DAN SINKRONISASI FOTO)
 
 // --- SANITY CONFIGURATION ---
 const projectId = 'a9t5rw7s'; // GANTI DENGAN PROJECT ID KAMU JIKA BERBEDA
@@ -54,14 +54,18 @@ const schoolPolicyQuery = encodeURIComponent(
     `*[_type == "schoolPolicy"][0]{policyTitle, policyGroups}`
 );
 
+// QUERY DIPERBARUI: Mengambil photoRef (Asset Reference ID)
 const alumniDirectoryQuery = encodeURIComponent(
     `*[_type == "alumni" && isFeatured == true] | order(graduationYear desc) {
-        name, graduationYear, currentJob, currentLocation, profilePhoto, coordinates, "photoUrl": profilePhoto.asset->url
+        name, graduationYear, currentJob, currentLocation, major, contactEmail, socialMedia, currentEducationInstitution, profilePhoto, coordinates, "photoRef": profilePhoto.asset._ref 
     }`
 );
 
 
 let globalArchiveDocuments = [];
+let alumniDataCache = []; // Cache data alumni
+let mapLoadAttempt = 0; // Hitungan percobaan load peta
+
 
 // --- FUNGSI KRITIS: CEK MAINTENANCE MODE DAN BYPASS DEVELOPER ---
 async function checkMaintenanceMode() {
@@ -271,11 +275,9 @@ async function fetchHomepageContent() {
                 const optimizedImageUrl = `${buildImageUrl(imageAssetId)}?w=1500&auto=format&q=75`;
                 const heroSection = document.getElementById('hero-section');
 
-                const overlayColor = 'rgba(0, 137, 64, 0.75)';
-
                 if (heroSection) {
                     heroSection.style.background = `
-                        linear-gradient(${overlayColor}, ${overlayColor}),
+                        linear-gradient(rgba(0, 137, 64, 0.75), rgba(0, 137, 64, 0.75)),
                         url('${optimizedImageUrl}') no-repeat center center/cover
                     `;
                     heroSection.style.backgroundAttachment = 'fixed';
@@ -1008,7 +1010,7 @@ function groupAndSortDivisionMembers(members) {
 function renderMemberCard(member) {
     let imageUrl = 'https://via.placeholder.com/150?text=FOTO';
     if (member.photoUrl) {
-        imageUrl = `${member.photoUrl}?w=120&h=120&fit=crop&auto=format&q=75`;
+        imageUrl = `${buildImageUrl(member.photoUrl)}?w=120&h=120&fit=crop&auto=format&q=75`;
     }
     
     const displayPosition = member.position.replace(' Divisi', '');
@@ -1219,14 +1221,22 @@ function renderAlumniCards(alumniList) {
     }
     
     const cardsHtml = alumniList.map(alumni => {
-        const imageUrl = alumni.photoUrl ? `${alumni.photoUrl}?w=100&h=100&fit=crop` : 'https://via.placeholder.com/100/008940/ffffff?text=AL';
+        // TAMPILAN KARTU DIPERBARUI UNTUK FOKUS NETWORKING
+        // KOREKSI FOTO PROFIL: Menggunakan alumni.profilePhoto.asset._ref jika perlu
+        const imageUrl = alumni.photoRef ? `${buildImageUrl(alumni.photoRef)}?w=100&h=100&fit=crop` : 'https://via.placeholder.com/100/008940/ffffff?text=AL';
         
         return `
             <div class="alumni-card">
                 <img src="${imageUrl}" alt="${alumni.name}" class="alumni-photo">
                 <h4>${alumni.name}</h4>
-                <p class="alumni-job">${alumni.currentJob || 'Belum Diatur'}</p>
-                <p>Lulus: ${alumni.graduationYear} | Lokasi: ${alumni.currentLocation || 'Indonesia'}</p>
+                <p class="alumni-job">${alumni.currentEducationInstitution || alumni.currentJob || 'Belum Bekerja/Kuliah'}</p>
+                <div class="alumni-networking-info">
+                    <p><strong>Jurusan:</strong> ${alumni.major || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${alumni.contactEmail || 'N/A'}</p>
+                    <p><strong>Lokasi:</strong> ${alumni.currentLocation || 'Indonesia'}</p>
+                    ${alumni.socialMedia ? `<p><a href="${alumni.socialMedia}" target="_blank" class="cta-button" style="padding: 5px 10px; font-size: 0.85rem;">Hubungi</a></p>` : ''}
+                </div>
+                <p style="font-size: 0.85rem; color: #999; margin-top: 10px;">Lulus MAN 1: ${alumni.graduationYear}</p>
             </div>
         `;
     }).join('');
@@ -1234,33 +1244,22 @@ function renderAlumniCards(alumniList) {
     container.innerHTML = cardsHtml;
 }
 
-// FUNGSI PLACEHOLDER UNTUK PETA
+// FUNGSI AKTUAL UNTUK PETA LEAFLET
 function renderAlumniMap(alumniList) {
     const mapEl = document.getElementById('map-container');
     if (!mapEl) return;
     
     const geoPoints = alumniList.filter(a => a.coordinates && a.coordinates.lat && a.coordinates.lng);
+    let markerCount = 0;
     
-    let mapInfo = `
-        <h4 style="color:#008940; margin-top:0;">Peta Persebaran Aktif</h4>
-        <p>Alumni yang memiliki data Geolocation: ${geoPoints.length} orang.</p>
-        <p>Anda telah mengimplementasikan struktur data untuk fitur ini (GeoPoint). Untuk menampilkannya di sini, Anda memerlukan library peta eksternal (seperti Leaflet) dan mengintegrasikan GeoJSON dari Sanity.</p>
-    `;
-
-    // Pastikan innerHTML hanya diisi dengan pesan placeholder jika Leaflet belum dimuat
+    // Perbaikan: Cek L sekali lagi sebelum inisialisasi
     if (typeof L === 'undefined') {
-        mapEl.innerHTML = `
-            <div style="background:rgba(255,255,255,0.9); padding:20px; border-radius:8px; width: 80%;">
-                ${mapInfo}
-            </div>
-        `;
-        return;
+        return; 
     }
 
-    // FUNGSI AKTUAL UNTUK PETA LEAFLET
     let alumniMap = null;
+    // Hapus map lama jika sudah ada container Leaflet
     if (mapEl.querySelector('.leaflet-container')) {
-        // Hapus map lama jika sudah ada container Leaflet
         mapEl.innerHTML = '';
     }
 
@@ -1273,8 +1272,6 @@ function renderAlumniMap(alumniList) {
     }).addTo(alumniMap);
     
     // 2. TAMBAHKAN MARKER
-    let markerCount = 0;
-    
     geoPoints.forEach(alumni => {
         const lat = alumni.coordinates.lat;
         const lng = alumni.coordinates.lng;
@@ -1282,8 +1279,8 @@ function renderAlumniMap(alumniList) {
         const popupContent = `
             <b>${alumni.name}</b><br>
             Lulus: ${alumni.graduationYear}<br>
-            Pekerjaan: ${alumni.currentJob || 'Belum Diatur'}<br>
-            Lokasi: ${alumni.currentLocation || 'N/A'}
+            Institusi: ${alumni.currentEducationInstitution || 'N/A'}<br>
+            Jurusan: ${alumni.major || 'N/A'}
         `;
 
         L.marker([lat, lng])
@@ -1293,9 +1290,69 @@ function renderAlumniMap(alumniList) {
         markerCount++;
     });
     
-    // Status marker di console (opsional, untuk debugging)
-    console.log(`Peta alumni dimuat dengan ${markerCount} marker.`);
+    // 3. PETA PERLU DIBERITAHU UNTUK MENGHITUNG ULANG UKURANNYA
+    // Ini membantu mengatasi 'white box' jika container baru saja muncul
+    setTimeout(function () {
+        alumniMap.invalidateSize(); 
+    }, 100); 
+
+    // 4. Status marker di bawah peta
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'section-lead';
+    statusDiv.style.padding = '10px 0';
+    statusDiv.style.textAlign = 'center';
+    statusDiv.innerHTML = `Alumni yang memiliki data Geolocation: **${markerCount} orang.**`;
+    
+    if (!document.getElementById('map-status-info')) {
+        const mapSection = document.getElementById('alumni-map');
+        if (mapSection) {
+            statusDiv.id = 'map-status-info';
+            mapSection.querySelector('.container').appendChild(statusDiv);
+        }
+    } else {
+        document.getElementById('map-status-info').innerHTML = statusDiv.innerHTML;
+    }
 }
+
+
+// FUNGSI UTAMA UNTUK MENGINISIALISASI ULANG PETA HINGGA BERHASIL
+function initializeMapWithRetry() {
+    const mapEl = document.getElementById('map-container');
+    
+    // Jika Leaflet (L) sudah didefinisikan
+    if (typeof L !== 'undefined' && mapEl && alumniDataCache.length > 0) {
+        renderAlumniMap(alumniDataCache);
+        
+        const statusPlaceholder = document.getElementById('map-status-info-temp');
+        if (statusPlaceholder) statusPlaceholder.remove();
+        
+        return;
+    }
+    
+    // Jika L belum terdefinisi, tampilkan pesan loading dan coba lagi
+    if (mapEl && typeof L === 'undefined') {
+        mapEl.innerHTML = `
+            <div id="map-status-info-temp" style="background:rgba(255,255,255,0.9); padding:20px; border-radius:8px; width: 80%; margin: 0 auto;">
+                <h4 style="color:red; margin-top:0;">❌ GAGAL MEMUAT PETA.</h4>
+                <p>Mengunduh library Leaflet. (Attempt: ${mapLoadAttempt}).</p>
+            </div>
+        `;
+    }
+    
+    // Batasi jumlah percobaan (Misal: 40 kali @ 100ms = 4 detik)
+    if (mapLoadAttempt < 40) {
+        mapLoadAttempt++;
+        setTimeout(initializeMapWithRetry, 100);
+    } else {
+        // Gagal setelah 4 detik
+        if (mapEl) {
+             mapEl.innerHTML = `<div style="padding: 20px;">
+                <p class="section-lead" style="color:red;">❌ GAGAL MEMUAT PETA. Pastikan link CDN Leaflet benar dan koneksi stabil.</p>
+            </div>`;
+        }
+    }
+}
+
 
 async function fetchAlumniDirectory() {
     const directoryContainer = document.getElementById('directory-container');
@@ -1311,8 +1368,13 @@ async function fetchAlumniDirectory() {
         const result = await response.json();
         const alumniList = result.result;
         
+        alumniDataCache = alumniList; // Cache data
         renderAlumniCards(alumniList);
-        renderAlumniMap(alumniList);
+        
+        // Panggil inisialisasi yang robust (akan otomatis retry jika L belum siap)
+        if (mapContainer) {
+            initializeMapWithRetry();
+        }
 
     } catch (error) {
         console.error("Kesalahan Fetch Alumni:", error);
