@@ -44,9 +44,10 @@ const archiveDocumentQuery = encodeURIComponent(
     }`
 );
 
+// public/script.js
 const osimMemberQuery = encodeURIComponent(
     `*[_type == "osimMember"]{
-        name, position, division, photo, "photoUrl": photo.asset->url
+        name, position, division, photo, "photoUrl": photo.asset._ref 
     }`
 );
 
@@ -1009,7 +1010,7 @@ function groupAndSortDivisionMembers(members) {
 
 function renderMemberCard(member) {
     let imageUrl = 'https://via.placeholder.com/150?text=FOTO';
-    if (member.photoUrl) {
+    if (member.photo) {
         imageUrl = `${buildImageUrl(member.photoUrl)}?w=120&h=120&fit=crop&auto=format&q=75`;
     }
     
