@@ -1189,24 +1189,70 @@ async function fetchSchoolPolicy() {
 }
 
 
-// --- FUNGSI TOGGLE MENU ---
+// --- FUNGSI TOGGLE MENU (LOGIKA BARU YANG LEBIH BAIK) ---
 function setupMenuToggle() {
     const toggleButton = document.querySelector('.menu-toggle');
     const navLinks = document.getElementById('nav-links');
+    
+    if (!toggleButton || !navLinks) return;
+    
+    const allDropdownContents = navLinks.querySelectorAll('.dropdown-content');
 
-    if (toggleButton && navLinks) {
-        toggleButton.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-
-        navLinks.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    navLinks.classList.remove('active');
-                }
-            });
+    // --- Fungsi Bantuan untuk menutup semua dropdown ---
+    const closeAllDropdowns = () => {
+        allDropdownContents.forEach(content => {
+            content.classList.remove('active');
         });
     }
+
+    // 1. Event untuk Tombol Hamburger
+    toggleButton.addEventListener('click', () => {
+        // Cek apakah menu AKAN dibuka atau ditutup
+        const isOpening = !navLinks.classList.contains('active');
+        navLinks.classList.toggle('active');
+
+        // Jika menu DITUTUP (isOpening = false), tutup juga semua dropdown
+        if (!isOpening) {
+            closeAllDropdowns();
+        }
+    });
+
+    // 2. Event untuk semua link <a> di dalam <nav>
+    navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            // Hanya jalankan logika ini di tampilan mobile
+            if (window.innerWidth > 768) return;
+
+            // --- KASUS A: Jika yang diklik adalah TOMBOL DROPDOWN ---
+            if (link.classList.contains('dropbtn')) {
+                e.preventDefault(); // Hentikan link agar tidak pindah halaman
+                const targetContent = link.nextElementSibling;
+                
+                if (!targetContent) return;
+
+                // Cek apakah dropdown ini sebelumnya sudah aktif/terbuka
+                const wasActive = targetContent.classList.contains('active');
+                
+                // Pertama, tutup SEMUA dropdown yang mungkin terbuka
+                closeAllDropdowns();
+                
+                // Jika dropdown ini tadinya TIDAK aktif, sekarang aktifkan
+                // (Jika dia tadinya aktif, 'closeAllDropdowns' sudah menutupnya)
+                if (!wasActive) {
+                    targetContent.classList.add('active');
+                }
+            } 
+            // --- KASUS B: Jika yang diklik adalah LINK BIASA ---
+            // (Termasuk link di dalam dropdown)
+            else {
+                // Tutup semua dropdown
+                closeAllDropdowns();
+                // Tutup menu utama
+                navLinks.classList.remove('active');
+                // Biarkan link pindah halaman (tidak ada preventDefault)
+            }
+        });
+    });
 }
 
 
@@ -1447,7 +1493,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 2. LANJUTKAN INISIALISASI HANYA JIKA MAINTENANCE NON-AKTIF
-    setupMenuToggle(); 
+    setupMenuToggle(); // <-- FUNGSI YANG DIPERBAIKI DIPANGGIL DI SINI
     
     displaySystemStatus();
     updateLiveTime(); 
