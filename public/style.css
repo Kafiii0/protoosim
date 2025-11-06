@@ -1167,13 +1167,14 @@ footer {
         padding: 1rem 0;
     }
     
-    /* Mobile Dropdown Fixes */
+    /* === PERBAIKAN DROPDOWN MOBILE DIMULAI DI SINI === */
+
     .dropdown .dropbtn {
         padding: 1rem 0;
         border-bottom: 1px solid #f0f0f0; 
     }
     
-    .dropdown:hover .dropdown-content,
+    /* Hapus :hover dan hanya target .dropdown-content */
     .dropdown-content {
         position: static; 
         box-shadow: none;
@@ -1182,18 +1183,28 @@ footer {
         width: 100%;
         min-width: auto;
         padding: 0;
-        display: none; 
+        display: none; /* Defaultnya tersembunyi */
     }
     
-    .dropdown:hover .dropdown-content {
-        display: block; 
+    /* Aturan BARU: Tampilkan jika punya kelas .active (dari JS) */
+    .dropdown-content.active {
+        display: block;
     }
+
+    /* HAPUS ATURAN :hover ini */
+    /* .dropdown:hover .dropdown-content {
+        display: block; 
+    } 
+    */
     
     .dropdown-content a {
         padding-left: 30px; 
         background-color: #fafafa;
         font-size: 0.9rem;
     }
+
+    /* === PERBAIKAN DROPDOWN MOBILE SELESAI === */
+
 
     /* Font Size Fixes */
     .hero-content h1 {
