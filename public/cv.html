@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembuatan CV ATS - OSIM MAN 1 Medan</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="script.js"></script>
+</head>
+<body>
+
+    <header class="navbar">
+            <div class="container">
+                <div class="navbar-brand">
+                    <a href="index.html" class="logo">
+                        <img src="img/20230928_202130_0000.png" alt="Logo OSIM MAN 1 Medan" class="logo-image">
+                    </a>
+                </div>
+                
+                <button class="menu-toggle" aria-label="Toggle navigation">
+                    &#9776; </button>
+
+                <nav>
+                    <ul id="nav-links">
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <div class="dropdown-content">
+                        <a href="info.html">Pengumuman & Berita</a>
+                        <a href="struktur.html">Struktur Organisasi</a>
+                        <a href="arsip.html">Arsip Dokumen OSIM</a>
+                        <a href="event.html">Event Mendatang</a>
+                        <a href="ekskul.html">Ekstrakurikuler</a>
+                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                    </div>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <div class="dropdown-content">
+                        <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
+                        <a href="beasiswa.html">Beasiswa</a>
+                        <a href="kompetisi.html">Kompetisi</a>
+                        <a href="cv.html">Pembuatan CV ATS</a>
+                        <a href="#">Info Universitas</a>
+                        <a href="#">Siswa Berprestasi</a>
+                        <a href="#">Tes Minat Bakat</a>
+                        <a href="#">Cerita Siswa</a>
+                    </div>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <div class="dropdown-content">
+                        <a href="alumni.html">Direktori Persebaran Alumni</a>
+                        <a href="#">Donasi dan crowdfunding project</a>
+                        <a href="#">Lowongan kerja</a>
+                        <a href="#">Internship</a>
+                        <a href="#">Alumni Berprestasi</a>
+                    </div>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Info ▼</a>
+                    <div class="dropdown-content">
+                        <a href="#">Who Made This</a>
+                        <a href="changelog.html">Log Perubahan</a>
+                        <a href="#">Kontak</a>
+                    </div>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Official ▼</a>
+                    <div class="dropdown-content">
+                        <a href="#">MAN 1 MEDAN Official Website</a>
+                        <a href="#">Perpustakaan MAN 1 Medan</a>
+                        <a href="#">Sosial Media</a>
+                    </div>
+                </li>
+            </ul>
+                </nav>
+            </div>
+        </header>
+
+    <div class="cv-builder-container">
+        
+        <div class="cv-editor no-print">
+            <h2>Editor CV Profesional</h2>
+            <p class="section-lead">Isi data diri Anda. Preview di sebelah kanan akan berubah secara otomatis.</p>
+            
+            <form id="cv-form" onsubmit="return false;">
+                <div class="editor-section">
+                    <h3>Informasi Personal</h3>
+                    <div class="form-group">
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="input-name" placeholder="Contoh: Muhammad Kahfi" oninput="updateCV()">
+                    </div>
+                    <div class="form-group">
+                        <label>Headline / Posisi (Opsional)</label>
+                        <input type="text" id="input-headline" placeholder="Contoh: Tech Enthusiast | Web Developer" oninput="updateCV()">
+                    </div>
+                    <div class="form-group">
+                        <label>Kontak (Email | HP | Lokasi | Link)</label>
+                        <input type="text" id="input-contact" placeholder="Medan | email@anda.com | 0812-xxxx | linkedin.com/in/..." oninput="updateCV()">
+                        <small>Format bebas, pisahkan dengan tanda "|" atau koma.</small>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <h3>Profil Singkat</h3>
+                    <div class="form-group">
+                        <textarea id="input-summary" rows="4" placeholder="Deskripsikan diri Anda, pengalaman utama, dan tujuan karir secara ringkas..." oninput="updateCV()"></textarea>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <h3>Riwayat Pendidikan</h3>
+                    <div id="education-inputs">
+                        <div class="dynamic-item">
+                            <input type="text" class="edu-school" placeholder="Nama Sekolah / Universitas" oninput="updateCV()">
+                            <input type="text" class="edu-degree" placeholder="Jurusan / Tingkat" oninput="updateCV()">
+                            <input type="text" class="edu-year" placeholder="Tahun (Contoh: 2020 - 2023)" oninput="updateCV()">
+                        </div>
+                    </div>
+                    <button type="button" class="add-btn" onclick="addEducationField()">+ Tambah Pendidikan</button>
+                </div>
+
+                <div class="editor-section">
+                    <h3>Keterampilan (Skills)</h3>
+                    <div class="form-group">
+                        <label>Professional Skills (Hard Skills)</label>
+                        <textarea id="input-hard-skills" rows="2" placeholder="Contoh: HTML, CSS, JavaScript, Desain Grafis, Manajemen Proyek" oninput="updateCV()"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Soft Skills</label>
+                        <textarea id="input-soft-skills" rows="2" placeholder="Contoh: Kepemimpinan, Komunikasi Publik, Kerja Tim, Pemecahan Masalah" oninput="updateCV()"></textarea>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <h3>Pengalaman Organisasi / Kerja</h3>
+                    <div id="experience-inputs">
+                        <div class="dynamic-item">
+                            <input type="text" class="exp-role" placeholder="Jabatan / Posisi" oninput="updateCV()">
+                            <input type="text" class="exp-org" placeholder="Nama Organisasi / Perusahaan" oninput="updateCV()">
+                            <input type="text" class="exp-year" placeholder="Periode (Contoh: 2023 - 2024)" oninput="updateCV()">
+                            <textarea class="exp-desc" rows="2" placeholder="Deskripsi singkat tugas/pencapaian..." oninput="updateCV()"></textarea>
+                        </div>
+                    </div>
+                    <button type="button" class="add-btn" onclick="addExperienceField()">+ Tambah Pengalaman</button>
+                </div>
+
+                <div class="editor-section">
+                    <h3>Portofolio & Sertifikat</h3>
+                    <div id="portfolio-inputs">
+                        <div class="dynamic-item">
+                            <input type="text" class="port-title" placeholder="Judul Projek / Nama Sertifikat" oninput="updateCV()">
+                            <input type="text" class="port-desc" placeholder="Keterangan / Link (Opsional)" oninput="updateCV()">
+                        </div>
+                    </div>
+                    <button type="button" class="add-btn" onclick="addPortfolioField()">+ Tambah Item</button>
+                </div>
+            </form>
+
+            <div class="action-buttons">
+                <button onclick="window.print()" class="cta-button print-btn">🖨️ Simpan sebagai PDF</button>
+                <p style="margin-top: 10px; font-size: 0.85rem; color: #666; text-align: center;">Tips: Pilih "Save as PDF" pada menu printer. Atur margin ke 'None' untuk hasil terbaik.</p>
+            </div>
+        </div>
+
+        <div class="cv-preview-wrapper">
+            <div id="cv-paper" class="cv-paper modern-layout">
+                
+                <div class="cv-header-section">
+                    <h1 id="preview-name">NAMA LENGKAP</h1>
+                    <p id="preview-headline" class="cv-headline">Headline / Posisi Anda</p>
+                    <div id="preview-contact" class="cv-contact-line">
+                        Alamat | Email | Nomor HP | Link Portfolio
+                    </div>
+                </div>
+
+                <div class="cv-body">
+                    
+                    <div class="cv-section-block">
+                        <h3 class="cv-heading">PROFIL</h3>
+                        <hr class="cv-line">
+                        <p id="preview-summary" class="cv-text-content">
+                            Ringkasan profesional Anda akan muncul di sini.
+                        </p>
+                    </div>
+
+                    <div class="cv-section-block">
+                        <h3 class="cv-heading">RIWAYAT PENDIDIKAN</h3>
+                        <hr class="cv-line">
+                        <div id="preview-education">
+                            </div>
+                    </div>
+
+                    <div class="cv-section-block">
+                        <h3 class="cv-heading">KETERAMPILAN</h3>
+                        <hr class="cv-line">
+                        <div class="cv-skill-group">
+                            <div class="cv-sub-label">Professional Skills:</div>
+                            <div id="preview-hard-skills" class="cv-text-content">-</div>
+                        </div>
+                        <div class="cv-skill-group" style="margin-top: 5px;">
+                            <div class="cv-sub-label">Soft Skills:</div>
+                            <div id="preview-soft-skills" class="cv-text-content">-</div>
+                        </div>
+                    </div>
+
+                    <div class="cv-section-block">
+                        <h3 class="cv-heading">PENGALAMAN ORGANISASI & KERJA</h3>
+                        <hr class="cv-line">
+                        <div id="preview-experience">
+                            </div>
+                    </div>
+
+                    <div class="cv-section-block">
+                        <h3 class="cv-heading">PORTOFOLIO & SERTIFIKAT</h3>
+                        <hr class="cv-line">
+                        <ul id="preview-portfolio" class="cv-list">
+                            </ul>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
