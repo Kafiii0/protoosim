@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSIM MAN 1 Medan - Info Beasiswa</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="index.html" class="logo">
+                    <img src="img/20230928_202130_0000.png" alt="Logo OSIM MAN 1 Medan" class="logo-image">
+                </a>
+            </div>
+            
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                &#9776; </button>
+
+            <nav>
+                <ul id="nav-links">
+                    <li class="dropdown">
+                        <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                        <div class="dropdown-content">
+                            <a href="info.html">Pengumuman & Berita</a>
+                            <a href="struktur.html">Struktur Organisasi</a>
+                            <a href="arsip.html">Arsip Dokumen OSIM</a>
+                            <a href="event.html">Event Mendatang</a>
+                            <a href="ekskul.html">Ekstrakurikuler</a>
+                        </div>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                        <div class="dropdown-content">
+                            <a href="kebijakan.html">Kebijakan Sekolah</a>
+                            <a href="beasiswa.html" class="active">Beasiswa</a>
+                            <a href="#">Info Universitas</a>
+                        </div>
+                    </li>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="changelog.html">Log Perubahan</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div id="beasiswa-main-content">
+        <section id="daftar-beasiswa" class="content-section" style="padding-top: 3rem;">
+            <div class="container">
+                <h2>Info Beasiswa</h2>
+                <p class="section-lead">Kumpulan informasi beasiswa untuk siswa/i MAN 1 Medan yang ingin melanjutkan ke perguruan tinggi.</p>
+                
+                <div id="beasiswa-list-container" class="event-list-grid">
+                    <p class="section-lead">Memuat daftar beasiswa...</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="beasiswa-detail-content" style="display: none;"> 
+        <div class="detail-wrapper">
+            <button id="back-beasiswa-button" onclick="closeBeasiswaDetail()">← Kembali ke Daftar Beasiswa</button>
+            <div id="beasiswa-detail-render">
+                </div>
+        </div>
+    </div> 
+    
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-info">
+                <h3>OSIM MAN 1 MEDAN</h3>
+                <p>Wadah Aspirasi, Kreativitas, dan Prestasi Siswa.</p>
+                <p>&copy; 2025. All Rights Reserved.</p>
+            </div>
+            <div class="footer-nav">
+                <h4>Navigasi</h4>
+                <p><a href="changelog.html">Log Perubahan</a></p>
+                <p><a href="index.html#sambutan">Sambutan Kepala Madrasah</a></p>
+            </div>
+            <div class="footer-time">
+                <h4>Status Web</h4>
+                <div id="system-status-container" class="system-status-indicator">
+                    Memuat Status...
+                </div>
+                <div class="footer-system-status">
+                    <p>Tanggal Terkini:</p>
+                    <p id="live-time">Memuat Waktu...</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+   <script src="script.js"></script>
+
+</body>
+</html>
