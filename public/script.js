@@ -1402,7 +1402,7 @@ async function fetchOrgStructure() {
             coreContainer.innerHTML = `
                 ${leadershipMembers.length > 0 ? `
                     <div class="struktur-group">
-                        <h4 class="struktur-sub-title">Kepala OSIM</h4>
+                        <h4 class="struktur-sub-title">INTI OSIM</h4>
                         <div class="member-grid core-leadership-grid">
                             ${leadershipHtml}
                         </div>
