@@ -1,4 +1,4 @@
-// public/script.js (KODE LENGKAP FINAL DAN SINKRONISASI FOTO)
+// public/script.js (KODE LENGKAP FINAL - TERMASUK EKSKUL & BEASISWA)
 
 // --- SANITY CONFIGURATION ---
 const projectId = 'a9t5rw7s'; // GANTI DENGAN PROJECT ID KAMU JIKA BERBEDA
@@ -38,6 +38,28 @@ const upcomingEventQuery = encodeURIComponent(
     }`
 );
 
+const tesMinatBakatQuery = encodeURIComponent(
+    `*[_type == "tesMinatBakat"][0]{
+        judul,
+        deskripsi,
+        soal[]{
+            pertanyaan,
+            opsi
+        }
+    }`
+);
+
+const developerProfileQuery = encodeURIComponent(
+    `*[_type == "developerProfile"][0]{
+        name, 
+        role, 
+        bio, 
+        skills, 
+        socials,
+        "photoUrl": profileImage.asset._ref
+    }`
+);
+
 const archiveDocumentQuery = encodeURIComponent(
     `*[_type == "archiveDocument"] | order(masaJabatan desc) {
         title, masaJabatan, description, documentFile, "fileUrl": documentFile.asset->url
@@ -62,6 +84,218 @@ const alumniDirectoryQuery = encodeURIComponent(
     }`
 );
 
+
+// --- KODE EKSKUL (DENGAN PERBAIKAN) ---
+const ekskulListQuery = encodeURIComponent(
+    `*[_type == "ekstrakurikuler"] | order(title asc) {
+        title, slug, "logoRef": logo.asset._ref
+    }`
+);
+
+const ekskulDetailQuery = (slug) => encodeURIComponent(
+    `*[_type == "ekstrakurikuler" && slug.current == "${slug}"][0]{
+        title,
+        pembimbing,
+        struktur,
+        tujuan,
+        jadwalLatihan,
+        lokasiParade,
+        prestasi,
+        requirement,
+        linkFormulir,
+        "logoRef": logo.asset._ref
+    }`
+);
+
+// --- KODE BARU UNTUK BEASISWA ---
+const beasiswaListQuery = encodeURIComponent(
+    `*[_type == "beasiswa" && deadline > now()] | order(deadline asc) {
+        title, slug, penyelenggara, deadline, "posterRef": poster.asset._ref
+    }`
+);
+
+const beasiswaDetailQuery = (slug) => encodeURIComponent(
+    `*[_type == "beasiswa" && slug.current == "${slug}"][0]{
+        title,
+        penyelenggara,
+        deadline,
+        cakupan,
+        deskripsi,
+        linkPendaftaran,
+        "posterRef": poster.asset._ref
+    }`
+);
+// --- END KODE BARU ---
+
+// --- [START] FUNGSI KOMPETISI (BARU) ---
+
+// 1. Query GROQ
+const kompetisiListQuery = encodeURIComponent(
+    `*[_type == "kompetisi" && deadline > now()] | order(deadline asc) {
+        title, slug, penyelenggara, deadline, "posterRef": poster.asset._ref
+    }`
+);
+
+const kompetisiDetailQuery = (slug) => encodeURIComponent(
+    `*[_type == "kompetisi" && slug.current == "${slug}"][0]{
+        title,
+        penyelenggara,
+        deadline,
+        kategori,
+        tingkat,
+        tanggalPelaksanaan,
+        deskripsi,
+        linkPendaftaran,
+        linkPanduan,
+        narahubungInternal,
+        "posterRef": poster.asset._ref
+    }`
+);
+
+// 2. Fungsi Fetch List
+async function fetchKompetisiList() {
+    const container = document.getElementById('kompetisi-list-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${kompetisiListQuery}`);
+        if (!response.ok) throw new Error(`Gagal fetch list kompetisi.`);
+        
+        const result = await response.json();
+        const kompetisiList = result.result;
+
+        container.innerHTML = '';
+
+        if (kompetisiList.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada informasi kompetisi terbaru saat ini. Cek lagi nanti!</p>';
+            return;
+        }
+
+        kompetisiList.forEach(item => {
+            let imageUrl = 'https://via.placeholder.com/400x225?text=Poster+Kompetisi'; 
+            if (item.posterRef) {
+                imageUrl = `${buildImageUrl(item.posterRef)}?w=400&h=225&fit=crop&auto=format&q=75`;
+            }
+            
+            const cardHtml = `
+                <div class="event-card" onclick="openKompetisiDetail('${item.slug.current}')">
+                    <div class="event-image-wrapper">
+                        <img src="${imageUrl}" alt="Poster ${item.title}">
+                    </div>
+                    <div class="event-content">
+                        <div>
+                            <h3>${item.title}</h3>
+                            <p class="event-location">${item.penyelenggara || 'N/A'}</p>
+                            <p class="click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Lihat Detail →]</p>
+                        </div>
+                    </div>
+                    <div class="countdown-container">
+                        <p style="margin:0; font-size: 0.9rem;">${formatDeadline(item.deadline)}</p>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += cardHtml;
+        });
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Kompetisi List:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat daftar kompetisi. Periksa koneksi Sanity.</p>';
+    }
+}
+
+
+
+// 3. Fungsi Buka Detail
+window.openKompetisiDetail = async function(slug) {
+    document.getElementById('kompetisi-main-content').style.display = 'none';
+    
+    const detailContent = document.getElementById('kompetisi-detail-content');
+    const detailRender = document.getElementById('kompetisi-detail-render');
+    detailContent.style.display = 'block';
+    detailRender.innerHTML = '<p class="section-lead">Memuat detail kompetisi...</p>';
+    window.scrollTo(0, 0); 
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${kompetisiDetailQuery(slug)}`);
+        if (!response.ok) throw new Error(`Gagal fetch detail kompetisi.`);
+        
+        const result = await response.json();
+        const kompetisi = result.result;
+
+        if (kompetisi) {
+            const deskripsiHtml = renderPortableText(kompetisi.deskripsi);
+            
+            let posterUrl = 'https://via.placeholder.com/800x450?text=Poster+Kompetisi'; 
+            if (kompetisi.posterRef) {
+                posterUrl = `${buildImageUrl(kompetisi.posterRef)}?w=800&fit=scale&auto=format&q=85`;
+            }
+
+            detailRender.innerHTML = `
+                <div class="koorbid-detail-header">
+                    <h1 class="detail-title">${kompetisi.title}</h1>
+                    <p style="font-size: 1.2rem; margin-top: -1rem; margin-bottom: 1rem;">Penyelenggara: <strong>${kompetisi.penyelenggara || 'N/A'}</strong></p>
+                    
+                    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <span style="background: #e6ffe6; color: #008940; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">${kompetisi.kategori || 'Umum'}</span>
+                        <span style="background: #fff3cd; color: #856404; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">${kompetisi.tingkat || 'Nasional'}</span>
+                    </div>
+
+                    <img src="${posterUrl}" alt="${kompetisi.title}" class="detail-image-full" style="max-width: 600px; width: 100%;">
+                </div>
+                
+                <div class="detail-section" style="text-align: center; padding: 2rem; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                    ${kompetisi.linkPendaftaran ? `
+                        <a href="${kompetisi.linkPendaftaran}" target="_blank" class="cta-button" style="background-color: #008940; color: white;">
+                            🔗 Daftar Sekarang
+                        </a>
+                    ` : ''}
+                    ${kompetisi.linkPanduan ? `
+                        <a href="${kompetisi.linkPanduan}" target="_blank" class="cta-button" style="background-color: #34495e; color: white;">
+                            📖 Buku Panduan (Juknis)
+                        </a>
+                    ` : ''}
+                </div>
+
+                <div class="detail-section">
+                    <h3>Jadwal Penting</h3>
+                    <p><strong>Batas Akhir Pendaftaran:</strong> ${formatDeadline(kompetisi.deadline)}</p>
+                    <p><strong>Pelaksanaan Lomba:</strong> ${kompetisi.tanggalPelaksanaan || 'Akan diinformasikan'}</p>
+                </div>
+                
+                ${kompetisi.narahubungInternal ? `
+                    <div class="detail-section" style="background-color: #f0f8ff; border-left: 5px solid #008940;">
+                        <h3>Info Sekolah</h3>
+                        <p>${kompetisi.narahubungInternal}</p>
+                    </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>Deskripsi & Ketentuan</h3>
+                    <div class="functions-list">
+                        ${deskripsiHtml || '<p>Deskripsi belum diisi.</p>'}
+                    </div>
+                </div>
+            `;
+            
+        } else {
+            detailRender.innerHTML = '<p class="section-lead">Detail kompetisi tidak ditemukan.</p>';
+        }
+
+    } catch (error) {
+        console.error("Kesalahan Saat Memuat Detail Kompetisi:", error);
+        detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail. Periksa koneksi API Sanity Anda.</p>';
+    }
+}
+
+
+
+// 4. Fungsi Tutup Detail
+window.closeKompetisiDetail = function() {
+    document.getElementById('kompetisi-detail-content').style.display = 'none';
+    document.getElementById('kompetisi-main-content').style.display = 'block';
+    window.scrollTo(0, 0); 
+}
+// --- [END] FUNGSI KOMPETISI ---
 
 let globalArchiveDocuments = [];
 let alumniDataCache = []; // Cache data alumni
@@ -116,14 +350,32 @@ async function checkMaintenanceMode() {
 // ------------------------------------------
 
 // --- FUNGSI HELPER: MEMBUAT URL GAMBAR DARI ASSET ID ---
+// === [START] FUNGSI YANG DIPERBAIKI (FIX BUG LOGO) ===
 function buildImageUrl(imageAssetId) {
-    const parts = imageAssetId.split('-');
-    const id = parts[1];
-    const dimensions = parts[2];
-    const format = parts[3];
+    if (!imageAssetId || !imageAssetId.startsWith('image-')) {
+        return ''; // Kembalikan string kosong jika ID tidak valid
+    }
+
+    // 1. Hapus 'image-' dari bagian depan
+    const trimmedId = imageAssetId.substring(6); // 'image-'.length === 6
+
+    // 2. Cari index dari tanda '-' terakhir
+    const lastDashIndex = trimmedId.lastIndexOf('-');
+    if (lastDashIndex === -1) {
+        return ''; // Format tidak valid (misal: 'image-abc')
+    }
+
+    // 3. Pisahkan nama file dan format
+    const filename = trimmedId.substring(0, lastDashIndex);
+    const format = trimmedId.substring(lastDashIndex + 1);
+
+    // 4. Gabungkan kembali dengan tanda '.'
+    const properFilename = `${filename}.${format}`;
     
-    return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+    // 5. Kembalikan URL CDN lengkap
+    return `https://cdn.sanity.io/images/${projectId}/${dataset}/${properFilename}`;
 }
+// === [END] FUNGSI YANG DIPERBAIKI ===
 
 // --- FUNGSI HELPER: MENGUBAH URL YOUTUBE KE EMBED URL ---
 function getYouTubeEmbedUrl(url) {
@@ -458,7 +710,6 @@ async function fetchGalleryImages() {
     }
 }
 
-
 // --- FUNGSI UTAMA 5: FETCH LOG PERUBAHAN ---
 async function fetchChangelog() {
     const logContainer = document.getElementById('log-container');
@@ -510,6 +761,96 @@ async function fetchChangelog() {
     }
 }
 
+// --- [START] CV MAKER LOGIC (UPDATED) ---
+
+window.updateCV = function() {
+    const getVal = (id, def) => document.getElementById(id)?.value || def;
+
+    // Personal Info
+    document.getElementById('preview-name').innerText = getVal('input-name', 'NAMA LENGKAP');
+    document.getElementById('preview-headline').innerText = getVal('input-headline', '');
+    document.getElementById('preview-contact').innerText = getVal('input-contact', 'Alamat | Email | No HP | Link');
+    
+    // Summary & Skills
+    document.getElementById('preview-summary').innerText = getVal('input-summary', 'Ringkasan profil Anda...');
+    document.getElementById('preview-hard-skills').innerText = getVal('input-hard-skills', '-');
+    document.getElementById('preview-soft-skills').innerText = getVal('input-soft-skills', '-');
+
+    // Helper for dynamic lists
+    const updateList = (inputId, previewId, renderItem) => {
+        const container = document.getElementById(inputId);
+        const prevContainer = document.getElementById(previewId);
+        if(container && prevContainer) {
+            prevContainer.innerHTML = Array.from(container.querySelectorAll('.dynamic-item')).map(renderItem).join('');
+        }
+    };
+
+    // 1. Education Render
+    updateList('education-inputs', 'preview-education', (item) => {
+        const school = item.querySelector('.edu-school').value;
+        const degree = item.querySelector('.edu-degree').value;
+        const year = item.querySelector('.edu-year').value;
+        if (!school) return '';
+        return `
+            <div class="cv-list-item">
+                <div class="cv-item-top">
+                    <span class="cv-item-title">• ${school}</span>
+                    <span class="cv-item-date">${year}</span>
+                </div>
+                ${degree ? `<div class="cv-item-sub" style="padding-left: 12px;">${degree}</div>` : ''}
+            </div>
+        `;
+    });
+
+    // 2. Experience Render
+    updateList('experience-inputs', 'preview-experience', (item) => {
+        const role = item.querySelector('.exp-role').value;
+        const org = item.querySelector('.exp-org').value;
+        const year = item.querySelector('.exp-year').value;
+        const desc = item.querySelector('.exp-desc').value;
+        if (!role) return '';
+        return `
+            <div class="cv-list-item">
+                <div class="cv-item-top">
+                    <span class="cv-item-title">• ${role}</span>
+                    <span class="cv-item-date">${year}</span>
+                </div>
+                <div class="cv-item-sub" style="padding-left: 12px;">${org}</div>
+                ${desc ? `<div class="cv-item-desc" style="padding-left: 12px;">${desc.replace(/\n/g, '<br>')}</div>` : ''}
+            </div>
+        `;
+    });
+
+    // 3. Portfolio Render
+    updateList('portfolio-inputs', 'preview-portfolio', (item) => {
+        const title = item.querySelector('.port-title').value;
+        const desc = item.querySelector('.port-desc').value;
+        if (!title) return '';
+        return `
+            <li><strong>${title}</strong> ${desc ? `: ${desc}` : ''}</li>
+        `;
+    });
+};
+
+// Fungsi Tambah Input (Pendidikan, Pengalaman, Portofolio)
+window.addEducationField = () => {
+    const div = document.createElement('div'); div.className = 'dynamic-item';
+    div.innerHTML = `<input type="text" class="edu-school" placeholder="Nama Sekolah" oninput="updateCV()"><input type="text" class="edu-degree" placeholder="Jurusan" oninput="updateCV()"><input type="text" class="edu-year" placeholder="Tahun" oninput="updateCV()"><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    document.getElementById('education-inputs').appendChild(div);
+};
+
+window.addExperienceField = () => {
+    const div = document.createElement('div'); div.className = 'dynamic-item';
+    div.innerHTML = `<input type="text" class="exp-role" placeholder="Posisi / Jabatan" oninput="updateCV()"><input type="text" class="exp-org" placeholder="Organisasi / Perusahaan" oninput="updateCV()"><input type="text" class="exp-year" placeholder="Periode" oninput="updateCV()"><textarea class="exp-desc" rows="2" placeholder="Deskripsi tugas" oninput="updateCV()"></textarea><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    document.getElementById('experience-inputs').appendChild(div);
+};
+
+window.addPortfolioField = () => {
+    const div = document.createElement('div'); div.className = 'dynamic-item';
+    div.innerHTML = `<input type="text" class="port-title" placeholder="Nama Project / Sertifikat" oninput="updateCV()"><input type="text" class="port-desc" placeholder="Keterangan / Link" oninput="updateCV()"><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    document.getElementById('portfolio-inputs').appendChild(div);
+};
+// --- [END] CV MAKER LOGIC ---
 
 // --- FUNGSI UTAMA 6: FETCH PUSAT INFORMASI (LIST) ---
 async function fetchInformationPosts() {
@@ -1482,6 +1823,325 @@ async function handleAlumniApplication(event) {
 }
 
 
+// --- [START] FUNGSI EKSKUL (DENGAN PERBAIKAN) ---
+
+async function fetchEkskulList() {
+    const container = document.getElementById('ekskul-list-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${ekskulListQuery}`);
+        if (!response.ok) throw new Error(`Gagal fetch ekskul list.`);
+        
+        const result = await response.json();
+        const ekskulList = result.result;
+
+        container.innerHTML = '';
+
+        if (ekskulList.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada ekstrakurikuler yang didaftarkan.</p>';
+            return;
+        }
+
+        ekskulList.forEach(ekskul => {
+            let iconUrl = 'https://via.placeholder.com/60?text=LOGO'; 
+            
+            if (ekskul.logoRef) {
+                iconUrl = `${buildImageUrl(ekskul.logoRef)}?w=60&h=60&fit=crop&auto=format`;
+            }
+            
+            const cardHtml = `
+                <div class="koorbid-card" onclick="openEkskulDetail('${ekskul.slug.current}')">
+                    <div class="koorbid-icon">
+                        <img src="${iconUrl}" alt="${ekskul.title} Logo">
+                    </div>
+                    <h3>${ekskul.title}</h3>
+                    <p class.click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Lihat Detail]</p>
+                </div>
+            `;
+            container.innerHTML += cardHtml;
+        });
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Ekskul List:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat daftar ekstrakurikuler.</p>';
+    }
+}
+
+window.openEkskulDetail = async function(slug) {
+    document.getElementById('ekskul-main-content').style.display = 'none';
+    
+    const detailContent = document.getElementById('ekskul-detail-content');
+    const detailRender = document.getElementById('ekskul-detail-render');
+    detailContent.style.display = 'block';
+    detailRender.innerHTML = '<p class="section-lead">Memuat detail ekstrakurikuler...</p>';
+    window.scrollTo(0, 0); 
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${ekskulDetailQuery(slug)}`);
+        if (!response.ok) throw new Error(`Gagal fetch detail ekskul.`);
+        
+        const result = await response.json();
+        const ekskul = result.result;
+
+        if (ekskul) {
+            const strukturHtml = renderPortableText(ekskul.struktur);
+            const tujuanHtml = renderPortableText(ekskul.tujuan);
+            const prestasiHtml = renderPortableText(ekskul.prestasi);
+            const requirementHtml = renderPortableText(ekskul.requirement);
+            
+            let logoUrl = 'https://via.placeholder.com/150?text=LOGO'; 
+            
+            if (ekskul.logoRef) {
+                // PERBAIKAN BUG "fit=contain" SUDAH DITERAPKAN DI SINI
+                logoUrl = `${buildImageUrl(ekskul.logoRef)}?w=150&h=150&fit=scale&auto=format`;
+            }
+
+            detailRender.innerHTML = `
+                <div class="koorbid-detail-header">
+                    <img src="${logoUrl}" alt="${ekskul.title}" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 1rem;">
+                    <h1 class="detail-title">${ekskul.title}</h1>
+                    <p style="font-size: 1.1rem; margin-top: -1rem; margin-bottom: 2rem;">Pembimbing: <strong>${ekskul.pembimbing || 'N/A'}</strong></p>
+                </div>
+                
+                ${ekskul.linkFormulir ? `
+                    <div class="detail-section" style="text-align: center;">
+                        <a href="${ekskul.linkFormulir}" target="_blank" class="cta-button" style="background-color: #008940; color: white;">
+                            🔗 Gabung Sekarang (Klik di Sini)
+                        </a>
+                    </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>Jadwal & Lokasi</h3>
+                    <p><strong>Jadwal Latihan:</strong> ${ekskul.jadwalLatihan || 'Belum diatur'}</p>
+                    <p><strong>Lokasi Stan Parade:</strong> ${ekskul.lokasiParade || 'Belum diatur'}</p>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Tujuan Ekstrakurikuler</h3>
+                    <div class="functions-list">${tujuanHtml || '<p>Tujuan belum diisi.</p>'}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Struktur Organisasi</h3>
+                    <div class="functions-list">${strukturHtml || '<p>Struktur belum diisi.</p>'}</div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Syarat Bergabung</h3>
+                    <div class="functions-list">${requirementHtml || '<p>Syarat belum diisi.</p>'}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Prestasi</h3>
+                    <div class="functions-list">${prestasiHtml || '<p>Belum ada prestasi yang dicatat.</p>'}</div>
+                </div>
+            `;
+            
+        } else {
+            detailRender.innerHTML = '<p class="section-lead">Detail ekstrakurikuler tidak ditemukan.</p>';
+        }
+
+    } catch (error) {
+        console.error("Kesalahan Saat Memuat Detail Ekskul:", error);
+        detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail. Periksa koneksi API Sanity Anda.</p>';
+    }
+}
+
+window.closeEkskulDetail = function() {
+    document.getElementById('ekskul-detail-content').style.display = 'none';
+    document.getElementById('ekskul-main-content').style.display = 'block';
+    window.scrollTo(0, 0); 
+}
+// --- [END] FUNGSI EKSKUL ---
+
+async function fetchDeveloperProfile() {
+    const container = document.getElementById('dev-profile-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${developerProfileQuery}`);
+        if (!response.ok) {
+            throw new Error(`Gagal fetch developer. Status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const dev = result.result;
+
+        if (!dev) {
+            container.innerHTML = '<p class="section-lead" style="color:white;">Profil developer belum diisi di Sanity Studio.</p>';
+            return;
+        }
+
+        // Render Skills
+        const skillsHtml = dev.skills ? dev.skills.map(skill => 
+            `<span class="skill-tag">${skill}</span>`
+        ).join('') : '';
+
+        // Render Socials
+        const socialsHtml = dev.socials ? dev.socials.map(soc => 
+            `<a href="${soc.url}" target="_blank" class="social-btn">${soc.platform}</a>`
+        ).join('') : '';
+
+        // Build Photo URL (PERBAIKAN DISINI)
+        let photoUrl = 'https://via.placeholder.com/300?text=DEV';
+        if (dev.photoUrl) {
+            photoUrl = `${buildImageUrl(dev.photoUrl)}?w=300&h=300&fit=crop&auto=format&q=80`;
+        }
+
+        container.innerHTML = `
+            <div class="dev-card">
+                <div class="dev-photo-frame">
+                    <img src="${photoUrl}" alt="${dev.name}" class="dev-photo">
+                </div>
+                <h1 class="dev-name">${dev.name}</h1>
+                <p class="dev-role">${dev.role || 'Developer'}</p>
+                <p class="dev-bio">${dev.bio || ''}</p>
+                
+                ${skillsHtml ? `<div class="dev-skills">${skillsHtml}</div>` : ''}
+                
+                ${socialsHtml ? `<div class="dev-socials">${socialsHtml}</div>` : ''}
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Developer:", error);
+        container.innerHTML = '<p class="section-lead" style="color:white;">Gagal memuat profil developer. Periksa koneksi Sanity.</p>';
+    }
+}
+
+// --- [START] FUNGSI BARU BEASISWA ---
+
+function formatDeadline(dateTimeString) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const date = new Date(dateTimeString);
+    return `Batas Akhir: ${date.toLocaleDateString('id-ID', options)} WIB`;
+}
+
+async function fetchBeasiswaList() {
+    const container = document.getElementById('beasiswa-list-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${beasiswaListQuery}`);
+        if (!response.ok) throw new Error(`Gagal fetch list beasiswa.`);
+        
+        const result = await response.json();
+        const beasiswaList = result.result;
+
+        container.innerHTML = '';
+
+        if (beasiswaList.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada informasi beasiswa yang tersedia saat ini. Cek lagi nanti!</p>';
+            return;
+        }
+
+        beasiswaList.forEach(item => {
+            let imageUrl = 'https://via.placeholder.com/400x225?text=Poster+Beasiswa'; 
+            if (item.posterRef) {
+                imageUrl = `${buildImageUrl(item.posterRef)}?w=400&h=225&fit=crop&auto=format&q=75`;
+            }
+            
+            const cardHtml = `
+                <div class="event-card" onclick="openBeasiswaDetail('${item.slug.current}')">
+                    <div class="event-image-wrapper">
+                        <img src="${imageUrl}" alt="Poster ${item.title}">
+                    </div>
+                    <div class="event-content">
+                        <div>
+                            <h3>${item.title}</h3>
+                            <p class="event-location">${item.penyelenggara || 'N/A'}</p>
+                            <p class="click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Lihat Detail →]</p>
+                        </div>
+                    </div>
+                    <div class="countdown-container">
+                        <p style="margin:0; font-size: 0.9rem;">${formatDeadline(item.deadline)}</p>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += cardHtml;
+        });
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Beasiswa List:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat daftar beasiswa. Periksa koneksi Sanity.</p>';
+    }
+}
+
+
+
+window.openBeasiswaDetail = async function(slug) {
+    document.getElementById('beasiswa-main-content').style.display = 'none';
+    
+    const detailContent = document.getElementById('beasiswa-detail-content');
+    const detailRender = document.getElementById('beasiswa-detail-render');
+    detailContent.style.display = 'block';
+    detailRender.innerHTML = '<p class="section-lead">Memuat detail beasiswa...</p>';
+    window.scrollTo(0, 0); 
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${beasiswaDetailQuery(slug)}`);
+        if (!response.ok) throw new Error(`Gagal fetch detail beasiswa.`);
+        
+        const result = await response.json();
+        const beasiswa = result.result;
+
+        if (beasiswa) {
+            const deskripsiHtml = renderPortableText(beasiswa.deskripsi);
+            
+            let posterUrl = 'https://via.placeholder.com/800x450?text=Poster+Beasiswa'; 
+            if (beasiswa.posterRef) {
+                posterUrl = `${buildImageUrl(beasiswa.posterRef)}?w=800&fit=scale&auto=format&q=85`;
+            }
+
+            detailRender.innerHTML = `
+                <div class="koorbid-detail-header">
+                    <h1 class="detail-title">${beasiswa.title}</h1>
+                    <p style="font-size: 1.2rem; margin-top: -1rem; margin-bottom: 2rem;">Penyelenggara: <strong>${beasiswa.penyelenggara || 'N/A'}</strong></p>
+                    <img src="${posterUrl}" alt="${beasiswa.title}" class="detail-image-full" style="max-width: 800px; width: 100%;">
+                </div>
+                
+                ${beasiswa.linkPendaftaran ? `
+                    <div class="detail-section" style="text-align: center; padding: 2rem;">
+                        <a href="${beasiswa.linkPendaftaran}" target="_blank" class="cta-button" style="background-color: #008940; color: white; font-size: 1.1rem; padding: 15px 35px;">
+                            🔗 Daftar Sekarang (Link Resmi)
+                        </a>
+                    </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>Informasi Penting</h3>
+                    <p><strong>Batas Akhir Pendaftaran:</strong> ${formatDeadline(beasiswa.deadline)}</p>
+                    <p><strong>Cakupan Beasiswa:</strong> ${beasiswa.cakupan || 'Informasi tidak tersedia'}</p>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Deskripsi & Persyaratan</h3>
+                    <div class="functions-list">
+                        ${deskripsiHtml || '<p>Deskripsi dan persyaratan belum diisi.</p>'}
+                    </div>
+                </div>
+            `;
+            
+        } else {
+            detailRender.innerHTML = '<p class="section-lead">Detail beasiswa tidak ditemukan.</p>';
+        }
+
+    } catch (error) {
+        console.error("Kesalahan Saat Memuat Detail Beasiswa:", error);
+        detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail. Periksa koneksi API Sanity Anda.</p>';
+    }
+}
+
+window.closeBeasiswaDetail = function() {
+    document.getElementById('beasiswa-detail-content').style.display = 'none';
+    document.getElementById('beasiswa-main-content').style.display = 'block';
+    window.scrollTo(0, 0); 
+}
+// --- [END] FUNGSI BARU BEASISWA ---
+
+
 // --- GLOBAL INITIALIZATION (KONDISIONAL) ---
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -1511,6 +2171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         fetchGalleryImages(); 
     }
     
+
     // Inisialisasi Halaman Log Perubahan
     if (document.getElementById('log-container')) {
         fetchChangelog();
@@ -1531,16 +2192,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         fetchArchiveDocuments();
     }
     
+    // NEW: WHO MADE THIS INIT
+    if (document.getElementById('dev-profile-container')) {
+        fetchDeveloperProfile();
+    }
     // Inisialisasi Halaman Struktur Organisasi
     if (document.getElementById('core-members-container')) {
         fetchOrgStructure();
     }
     
+// Inisialisasi Halaman Kompetisi (BARU)
+    if (document.getElementById('kompetisi-list-container')) {
+        fetchKompetisiList();
+    }
+});
+
     // Inisialisasi Halaman Kebijakan Sekolah
     if (document.getElementById('policy-content')) {
         fetchSchoolPolicy();
     }
-    
+
+
     // Inisialisasi Halaman Alumni Connect
     if (document.getElementById('alumni-main-content')) {
         fetchAlumniDirectory();
@@ -1551,4 +2223,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             form.addEventListener('submit', handleAlumniApplication);
         }
     }
-});
+    
+    // Inisialisasi Halaman Ekstrakurikuler
+    if (document.getElementById('ekskul-list-container')) {
+        fetchEkskulList();
+    }
+
+    
+    // Inisialisasi Halaman Beasiswa (BARU)
+    if (document.getElementById('beasiswa-list-container')) {
+        fetchBeasiswaList();
+    }
