@@ -203,7 +203,138 @@ async function fetchKompetisiList() {
     }
 }
 
+// --- [TAMBAHAN DI BAGIAN QUERIES] ---
 
+const universityListQuery = encodeURIComponent(
+    `*[_type == "university"] | order(name asc) {
+        name, slug, location, ranking, "logoUrl": logo.asset->url
+    }`
+);
+
+const universityDetailQuery = (slug) => encodeURIComponent(
+    `*[_type == "university" && slug.current == "${slug}"][0]{
+        name, location, website, ranking, details, description, "logoUrl": logo.asset->url
+    }`
+);
+
+const alumniByUnivQuery = (univName) => encodeURIComponent(
+    `*[_type == "alumni" && currentEducationInstitution == "${univName}"] {
+        name, graduationYear, major, contactEmail, socialMedia, "photoRef": profilePhoto.asset._ref
+    }`
+);
+
+// --- [TAMBAHAN FUNGSI BARU] ---
+
+// 1. Fetch List Universitas
+async function fetchUniversityList() {
+    const container = document.getElementById('univ-list-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${universityListQuery}`);
+        const result = await response.json();
+        const list = result.result;
+
+        if (!list || list.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada data universitas.</p>';
+            return;
+        }
+
+        container.innerHTML = list.map(univ => `
+            <div class="univ-card" onclick="openUnivDetail('${univ.slug.current}')">
+                <img src="${univ.logoUrl ? univ.logoUrl : 'https://via.placeholder.com/100?text=UNIV'}" alt="${univ.name}" class="univ-logo">
+                <span class="univ-rank">${univ.ranking || 'Kampus Unggulan'}</span>
+                <h3>${univ.name}</h3>
+                <p class="univ-location">📍 ${univ.location || 'Indonesia'}</p>
+                <p class="click-indicator" style="margin-top:auto; font-size:0.85rem; color:#008940;">[Lihat Detail & Alumni]</p>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error("Error fetching universities:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat data universitas.</p>';
+    }
+}
+
+// 2. Buka Detail Universitas + Load Alumni
+window.openUnivDetail = async function(slug) {
+    document.getElementById('univ-main-content').style.display = 'none';
+    const detailContent = document.getElementById('univ-detail-content');
+    const renderEl = document.getElementById('univ-detail-render');
+    const alumniContainer = document.getElementById('univ-alumni-container');
+    
+    detailContent.style.display = 'block';
+    renderEl.innerHTML = '<p>Memuat data kampus...</p>';
+    alumniContainer.innerHTML = '<p>Mencari alumni di kampus ini...</p>';
+    window.scrollTo(0, 0);
+
+    try {
+        // A. Ambil Detail Kampus
+        const res = await fetch(`${apiUrl}?query=${universityDetailQuery(slug)}`);
+        const { result: univ } = await res.json();
+
+        if (univ) {
+            renderEl.innerHTML = `
+                <div class="koorbid-detail-header">
+                    <img src="${univ.logoUrl ? univ.logoUrl : ''}" style="width:150px; margin-bottom:1rem;">
+                    <h1 class="detail-title">${univ.name}</h1>
+                    <p style="font-size:1.2rem; color:#666;">📍 ${univ.location || '-'}</p>
+                </div>
+                
+                <div class="detail-section" style="text-align:center;">
+                    ${univ.website ? `<a href="${univ.website}" target="_blank" class="cta-button">Kunjungi Website Resmi</a>` : ''}
+                    <div style="margin-top: 2rem; text-align: left;">
+                        ${renderPortableText(univ.details) || `<p>${univ.description || 'Belum ada informasi detail.'}</p>`}
+                    </div>
+                </div>
+            `;
+
+            // B. Ambil Alumni di Kampus Ini (Chain Request)
+            // Kita gunakan nama universitas untuk mencari di field 'currentEducationInstitution' alumni
+            fetchAlumniByUniv(univ.name, alumniContainer);
+            
+        } else {
+            renderEl.innerHTML = '<p>Data universitas tidak ditemukan.</p>';
+        }
+    } catch (error) {
+        console.error("Error detail univ:", error);
+    }
+}
+
+async function fetchAlumniByUniv(univName, container) {
+    try {
+        const res = await fetch(`${apiUrl}?query=${alumniByUnivQuery(univName)}`);
+        const { result: alumniList } = await res.json();
+
+        if (!alumniList || alumniList.length === 0) {
+            container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #888;">Belum ada data alumni yang terdaftar di ${univName}.</p>`;
+            return;
+        }
+
+        // Render kartu alumni (Reuse style yang ada)
+        container.innerHTML = alumniList.map(a => `
+            <div class="alumni-card">
+                <img src="${a.photoRef ? buildImageUrl(a.photoRef)+'?w=100&h=100&fit=crop' : 'https://via.placeholder.com/100'}" class="alumni-photo">
+                <h4>${a.name}</h4>
+                <p style="font-size:0.9rem; font-weight:bold; color:#008940">${a.major || 'Mahasiswa'}</p>
+                <div style="margin-top:10px; font-size:0.85rem;">
+                    ${a.contactEmail ? `📧 ${a.contactEmail}<br>` : ''}
+                    ${a.socialMedia ? `<a href="${a.socialMedia}" target="_blank">🔗 Hubungi</a>` : ''}
+                </div>
+                <p style="font-size:0.8rem; color:#999; margin-top:5px;">Lulus MAN 1: ${a.graduationYear}</p>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        container.innerHTML = '<p>Gagal memuat data alumni.</p>';
+    }
+}
+
+window.closeUnivDetail = function() {
+    document.getElementById('univ-detail-content').style.display = 'none';
+    document.getElementById('univ-main-content').style.display = 'block';
+    window.scrollTo(0, 0);
+}
 
 // 3. Fungsi Buka Detail
 window.openKompetisiDetail = async function(slug) {
@@ -1791,12 +1922,35 @@ async function handleAlumniApplication(event) {
         return;
     }
     
+// ✅ VALIDASI FILE SIZE & TYPE (PENTING UNTUK iOS)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    
+    if (graduationProofFile.size > maxSize) {
+        formMessage.style.color = '#dc3545';
+        formMessage.innerText = '❌ Ukuran file terlalu besar. Maksimal 5MB.';
+        submitBtn.disabled = false;
+        return;
+    }
+    
+    if (!allowedTypes.includes(graduationProofFile.type)) {
+        formMessage.style.color = '#dc3545';
+        formMessage.innerText = '❌ Format file tidak didukung. Gunakan JPG, PNG, atau PDF.';
+        submitBtn.disabled = false;
+        return;
+    }
+
+
     // Gunakan FormData untuk mengirim data formulir dan file secara sekaligus
     const formData = new FormData(form);
 
     try {
+        // ✅ TIMEOUT CONTROLLER (30 detik)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
         // PANGGIL ENDPOINT SERVERLESS VERCEL
-        const response = await fetch('/api/submit-alumni', { 
+        const response = await fetch('https://protoosim.vercel.app/api/submit-alumni', { 
             method: 'POST',
             body: formData, // FormData akan otomatis mengatur Content-Type: multipart/form-data
         });
@@ -2185,6 +2339,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inisialisasi Halaman Event Mendatang
     if (document.getElementById('event-list-container')) {
         fetchUpcomingEvents();
+    }
+
+    if (document.getElementById('univ-list-container')) {
+        fetchUniversityList();
     }
     
     // Inisialisasi Halaman Arsip Dokumen
