@@ -1912,3 +1912,82 @@ footer {
     transform: translateY(-3px);
 }
 
+/* public/style.css (TAMBAHAN DI BAWAH) */
+
+/* --- 20. INFO UNIVERSITAS STYLING --- */
+
+.univ-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.univ-card {
+    background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.univ-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 137, 64, 0.15);
+    border-color: #008940;
+}
+
+.univ-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    margin-bottom: 1.5rem;
+    border-radius: 100%;
+}
+
+.univ-card h3 {
+    font-size: 1.25rem;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.univ-location {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.univ-rank {
+    background-color: #e6ffe6;
+    color: #008940;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* Styling Tombol Kembali */
+#back-univ-button {
+    background-color: #008940;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    display: inline-block;
+}
+
+#back-univ-button:hover {
+    background-color: #00642e;
+}
