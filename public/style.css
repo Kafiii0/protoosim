@@ -1991,3 +1991,451 @@ footer {
 #back-univ-button:hover {
     background-color: #00642e;
 }
+
+/* public/style.css (TAMBAHAN DI BAWAH) */
+
+/* --- 21. SISWA BERPRESTASI STYLING --- */
+
+.prestasi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.prestasi-card {
+    background: #ffffff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f0f0f0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.prestasi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 137, 64, 0.15);
+    border-color: #008940;
+}
+
+.prestasi-img-wrapper {
+    height: 250px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    background-color: #f9f9f9;
+}
+
+.prestasi-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.prestasi-card:hover .prestasi-img {
+    transform: scale(1.05);
+}
+
+.prestasi-content {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.prestasi-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #f1c40f; /* Warna Emas */
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+.prestasi-badge.Nasional { background: #e67e22; } /* Oranye */
+.prestasi-badge.Internasional { background: #e74c3c; } /* Merah */
+.prestasi-badge.Provinsi { background: #3498db; } /* Biru */
+
+.prestasi-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.prestasi-event {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+    display: block;
+    font-style: italic;
+}
+
+.prestasi-student {
+    font-weight: 600;
+    color: #008940;
+    font-size: 1rem;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+    display: block;
+}
+
+.prestasi-year {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 5px;
+    display: block;
+}
+
+/* ============================================
+   LOWONGAN KERJA STYLES
+   ============================================ */
+
+.lowongan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.lowongan-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.lowongan-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Header dengan Logo */
+.lowongan-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.lowongan-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #f5f5f5;
+    padding: 5px;
+}
+
+.lowongan-header-text h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #008940;
+}
+
+.lowongan-company {
+    margin: 0.2rem 0 0 0;
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* Badges */
+.lowongan-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.badge-tipe, .badge-remote, .badge-priority, .badge-kategori {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-fulltime {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.badge-parttime {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.badge-internship {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.badge-freelance {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.badge-contract {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.badge-remote {
+    background: #17a2b8;
+    color: white;
+}
+
+.badge-priority {
+    background: #ffc107;
+    color: #333;
+}
+
+.badge-kategori {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* Info Section */
+.lowongan-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.lowongan-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+/* Kategori Tags */
+.lowongan-kategori {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Deadline Warning */
+.lowongan-deadline {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 0.8rem;
+    margin-top: auto;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.filter-select {
+    padding: 10px 15px;
+    border: 2px solid #008940;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: 'Poppins', sans-serif;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-select:hover {
+    background: #f0f8f5;
+}
+
+.filter-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 137, 64, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .lowongan-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .filter-section {
+        flex-direction: column;
+    }
+
+    .filter-select {
+        width: 100%;
+    }
+}
+/* public/style.css (TAMBAHAN DI BAWAH) */
+
+/* --- 21. KONTAK PAGE STYLING --- */
+
+.contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr; /* Kiri lebih kecil dari kanan */
+    gap: 2rem;
+    margin-top: 2rem;
+    align-items: start;
+}
+
+/* Card Styles */
+.contact-info-card, 
+.contact-form-card {
+   background-color: #ffffff;
+    padding: 2.5rem; /* Ruang dalam yang lega */
+    border-radius: 16px; /* Sudut yang lebih membulat */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Bayangan lembut dan modern */
+    border: 1px solid #f0f2f5; /* Garis tepi halus */
+}
+
+.contact-info-card h3,
+.contact-form-card h3 {
+    color: #008940;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e6ffe6;
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* Info Items */
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.contact-item .icon {
+    font-size: 1.5rem;
+    margin-right: 15px;
+    background: #f0fdf4;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.contact-item p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.map-embed {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 850px) {
+    .contact-wrapper {
+        grid-template-columns: 1fr; /* Stack vertikal di HP */
+    }
+    .map-embed iframe {
+        height: 200px;
+    }
+}
+
+/* 4. Label */
+.form-group label {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+    color: #34495e;
+    font-size: 0.95rem;
+}
+
+/* Tanda bintang merah untuk field wajib */
+.form-group label span[style="color:red"] {
+    color: #e74c3c !important;
+    margin-left: 4px;
+}
+
+/* 5. Input dan Textarea */
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 14px 16px; /* Padding dalam yang nyaman */
+    border: 2px solid #e9ecef; /* Border default abu muda */
+    border-radius: 10px; /* Sudut input membulat */
+    font-size: 1rem;
+    color: #495057;
+    font-family: inherit;
+    background-color: #f8f9fa; /* Latar belakang input sedikit abu */
+    transition: all 0.3s ease;
+    box-sizing: border-box; /*Penting agar padding tidak merusak layout*/
+}
+
+/* Efek saat Input di-klik (Fokus) */
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    border-color: #008940; /* Berubah jadi hijau saat aktif */
+    background-color: #ffffff; /* Latar jadi putih bersih */
+    box-shadow: 0 0 0 4px rgba(0, 137, 64, 0.1); /* Efek 'glow' hijau */
+    outline: none;
+}
+
+/* Khusus Textarea */
+.form-group textarea {
+    resize: vertical; /* Hanya bisa diubah tingginya */
+    min-height: 120px;
+}
+
+/* Placeholder (Teks petunjuk samar) */
+::placeholder {
+    color: #adb5bd;
+    opacity: 1;
+}
+
+/* 6. Tombol Kirim (cta-button) */
+.cta-button {
+    width: auto;
+    padding: 14px;
+    background: linear-gradient(135deg, #008940, #00642e); /* Gradien hijau */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 137, 64, 0.3); /* Bayangan tombol */
+}
+
+.cta-button:hover {
+    transform: translateY(-3px); /* Efek tombol naik sedikit */
+    box-shadow: 0 8px 20px rgba(0, 137, 64, 0.4);
+}
+
+.cta-button:active {
+    transform: translateY(-1px);
+}
+
+/* Tombol saat loading/disabled */
+.cta-button:disabled {
+    background: #95a5a6;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 7. Pesan Status */
+#feedback-status {
+    margin-top: 1.2rem;
+    text-align: center;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 8px;
+}
