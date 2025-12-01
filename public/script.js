@@ -217,12 +217,35 @@ const universityDetailQuery = (slug) => encodeURIComponent(
     }`
 );
 
+const prestasiListQuery = encodeURIComponent(
+    `*[_type == "siswaBerprestasi"] | order(tahun desc, _createdAt desc) {
+        nama, kelas, namaPrestasi, namaLomba, tingkat, penyelenggara, tahun, 
+        "fotoRef": foto.asset._ref
+    }`
+);
+
 const alumniByUnivQuery = (univName) => encodeURIComponent(
     `*[_type == "alumni" && currentEducationInstitution == "${univName}"] {
         name, graduationYear, major, contactEmail, socialMedia, "photoRef": profilePhoto.asset._ref
     }`
 );
 
+const lowonganListQuery = encodeURIComponent(
+    `*[_type == "lowonganKerja" && deadline > now()] | order(deadline asc) {
+        judulPosisi, slug, perusahaan, tipeKerja, lokasi, isRemote, gaji, deadline, 
+        tingkatPendidikan, kategori, isPrioritasAlumni,
+        "logoRef": logoPerusahaan.asset._ref
+    }`
+);
+
+const lowonganDetailQuery = (slug) => encodeURIComponent(
+    `*[_type == "lowonganKerja" && slug.current == "${slug}"][0]{
+        judulPosisi, perusahaan, tipeKerja, lokasi, isRemote, gaji, deadline,
+        deskripsiPekerjaan, kualifikasi, benefitTambahan, linkApply, kontakPelamar,
+        isPrioritasAlumni, tingkatPendidikan, kategori,
+        "logoRef": logoPerusahaan.asset._ref
+    }`
+);
 // --- [TAMBAHAN FUNGSI BARU] ---
 
 // 1. Fetch List Universitas
@@ -444,7 +467,28 @@ async function checkMaintenanceMode() {
         console.warn("DEVELOPER BYPASS MODE ACTIVE: Maintenance Mode diabaikan.");
         return false;
     }
+async function fetchLowonganList() {
+    const container = document.getElementById('lowongan-list-container');
+    if (!container) return;
 
+    try {
+        const response = await fetch(`${apiUrl}?query=${lowonganListQuery}`);
+        
+        if (!response.ok) {
+            throw new Error(`Gagal fetch lowongan. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const lowonganList = result.result;
+        
+        globalLowonganData = lowonganList; // Simpan untuk filter
+        renderLowonganList(lowonganList);
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Lowongan:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat data lowongan. Periksa koneksi Sanity.</p>';
+    }
+}
     // Daftar halaman yang dikecualikan dari redirect
     const maintenancePageNames = ['maintenance.html', 'under_development.html', 'pemeliharaan.html'];
     const isMaintenancePage = maintenancePageNames.some(name => window.location.pathname.includes(name));
@@ -507,6 +551,208 @@ function buildImageUrl(imageAssetId) {
     return `https://cdn.sanity.io/images/${projectId}/${dataset}/${properFilename}`;
 }
 // === [END] FUNGSI YANG DIPERBAIKI ===
+function renderLowonganList(lowonganList) {
+    const container = document.getElementById('lowongan-list-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!lowonganList || lowonganList.length === 0) {
+        container.innerHTML = '<p class="section-lead">Tidak ada lowongan yang sesuai dengan filter Anda saat ini.</p>';
+        return;
+    }
+
+    container.innerHTML = lowonganList.map(item => {
+        const logoUrl = item.logoRef 
+            ? `${buildImageUrl(item.logoRef)}?w=80&h=80&fit=crop&auto=format&q=75`
+            : 'https://via.placeholder.com/80?text=LOGO';
+
+        const remoteBadge = item.isRemote 
+            ? '<span class="badge-remote">🌍 Remote</span>' 
+            : '';
+
+        const priorityBadge = item.isPrioritasAlumni 
+            ? '<span class="badge-priority">⭐ Prioritas Alumni</span>' 
+            : '';
+
+        const kategoriBadges = item.kategori 
+            ? item.kategori.map(kat => `<span class="badge-kategori">${kat}</span>`).join('')
+            : '';
+
+        return `
+            <div class="lowongan-card" onclick="openLowonganDetail('${item.slug.current}')">
+                <div class="lowongan-header">
+                    <img src="${logoUrl}" alt="${item.perusahaan}" class="lowongan-logo">
+                    <div class="lowongan-header-text">
+                        <h3>${item.judulPosisi}</h3>
+                        <p class="lowongan-company">${item.perusahaan}</p>
+                    </div>
+                </div>
+                
+                <div class="lowongan-badges">
+                    <span class="badge-tipe badge-${item.tipeKerja.toLowerCase().replace('-', '')}">${item.tipeKerja}</span>
+                    ${remoteBadge}
+                    ${priorityBadge}
+                </div>
+
+                <div class="lowongan-info">
+                    <p>📍 ${item.lokasi}</p>
+                    <p>💰 ${item.gaji || 'Kompetitif'}</p>
+                    <p>🎓 Min. ${item.tingkatPendidikan}</p>
+                </div>
+
+                <div class="lowongan-kategori">
+                    ${kategoriBadges}
+                </div>
+
+                <div class="lowongan-deadline">
+                    <p style="margin:0; font-size: 0.85rem; color: #dc3545;">⏰ Batas: ${formatDeadline(item.deadline)}</p>
+                </div>
+
+                <p class="click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 1rem;">[Lihat Detail & Apply →]</p>
+            </div>
+        `;
+    }).join('');
+}
+
+window.filterLowongan = function() {
+    const tipeFilter = document.getElementById('filter-tipe').value;
+    const kategoriFilter = document.getElementById('filter-kategori').value;
+
+    let filtered = globalLowonganData;
+
+    // Filter berdasarkan Tipe Kerja
+    if (tipeFilter !== 'all') {
+        filtered = filtered.filter(item => item.tipeKerja === tipeFilter);
+    }
+
+    // Filter berdasarkan Kategori
+    if (kategoriFilter !== 'all') {
+        filtered = filtered.filter(item => 
+            item.kategori && item.kategori.includes(kategoriFilter)
+        );
+    }
+
+    renderLowonganList(filtered);
+}
+
+window.resetFilter = function() {
+    document.getElementById('filter-tipe').value = 'all';
+    document.getElementById('filter-kategori').value = 'all';
+    renderLowonganList(globalLowonganData);
+}
+
+window.openLowonganDetail = async function(slug) {
+    document.getElementById('lowongan-main-content').style.display = 'none';
+    
+    const detailContent = document.getElementById('lowongan-detail-content');
+    const detailRender = document.getElementById('lowongan-detail-render');
+    detailContent.style.display = 'block';
+    detailRender.innerHTML = '<p class="section-lead">Memuat detail lowongan...</p>';
+    window.scrollTo(0, 0);
+
+    try {
+        const response = await fetch(`${apiUrl}?query=${lowonganDetailQuery(slug)}`);
+        
+        if (!response.ok) {
+            throw new Error(`Gagal fetch detail. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const lowongan = result.result;
+
+        if (lowongan) {
+            const deskripsiHtml = renderPortableText(lowongan.deskripsiPekerjaan);
+            const kualifikasiHtml = renderPortableText(lowongan.kualifikasi);
+            const benefitHtml = lowongan.benefitTambahan 
+                ? renderPortableText(lowongan.benefitTambahan) 
+                : '<p>Tidak disebutkan.</p>';
+
+            const logoUrl = lowongan.logoRef 
+                ? `${buildImageUrl(lowongan.logoRef)}?w=150&h=150&fit=scale&auto=format&q=80`
+                : 'https://via.placeholder.com/150?text=LOGO';
+
+            const remoteBadge = lowongan.isRemote 
+                ? '<span class="badge-remote" style="font-size: 1rem; padding: 8px 15px;">🌍 Remote Friendly</span>' 
+                : '';
+
+            const priorityBadge = lowongan.isPrioritasAlumni 
+                ? '<span class="badge-priority" style="font-size: 1rem; padding: 8px 15px;">⭐ Prioritas Alumni MAN 1</span>' 
+                : '';
+
+            detailRender.innerHTML = `
+                <div class="koorbid-detail-header">
+                    <img src="${logoUrl}" alt="${lowongan.perusahaan}" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 1rem; border-radius: 8px; background: white; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h1 class="detail-title">${lowongan.judulPosisi}</h1>
+                    <p style="font-size: 1.3rem; margin-top: -1rem; margin-bottom: 1rem;"><strong>${lowongan.perusahaan}</strong></p>
+                    
+                    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <span class="badge-tipe badge-${lowongan.tipeKerja.toLowerCase().replace('-', '')}" style="font-size: 1rem; padding: 8px 15px;">${lowongan.tipeKerja}</span>
+                        ${remoteBadge}
+                        ${priorityBadge}
+                    </div>
+                </div>
+
+                <div class="detail-section" style="text-align: center; padding: 2rem;">
+                    <a href="${lowongan.linkApply}" target="_blank" class="cta-button" style="background-color: #008940; color: white; font-size: 1.1rem; padding: 15px 40px;">
+                        📝 Apply Sekarang
+                    </a>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Informasi Penting</h3>
+                    <p><strong>Lokasi:</strong> ${lowongan.lokasi}${lowongan.isRemote ? ' (Bisa Remote)' : ''}</p>
+                    <p><strong>Gaji/Benefit:</strong> ${lowongan.gaji || 'Kompetitif'}</p>
+                    <p><strong>Minimal Pendidikan:</strong> ${lowongan.tingkatPendidikan}</p>
+                    <p><strong>Batas Pendaftaran:</strong> ${formatDeadline(lowongan.deadline)}</p>
+                    ${lowongan.kontakPelamar ? `<p><strong>Kontak Pertanyaan:</strong> ${lowongan.kontakPelamar}</p>` : ''}
+                </div>
+
+                <div class="detail-section">
+                    <h3>Deskripsi Pekerjaan</h3>
+                    <div class="functions-list">
+                        ${deskripsiHtml}
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Kualifikasi & Persyaratan</h3>
+                    <div class="functions-list">
+                        ${kualifikasiHtml}
+                    </div>
+                </div>
+
+                ${lowongan.benefitTambahan ? `
+                    <div class="detail-section" style="background-color: #e6ffe6; border-left: 5px solid #008940;">
+                        <h3>Benefit Tambahan</h3>
+                        <div class="functions-list">
+                            ${benefitHtml}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="detail-section" style="text-align: center; padding: 2rem;">
+                    <a href="${lowongan.linkApply}" target="_blank" class="cta-button" style="background-color: #008940; color: white; font-size: 1.1rem; padding: 15px 40px;">
+                        📝 Apply Sekarang
+                    </a>
+                </div>
+            `;
+
+        } else {
+            detailRender.innerHTML = '<p class="section-lead">Detail lowongan tidak ditemukan.</p>';
+        }
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Detail Lowongan:", error);
+        detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail lowongan.</p>';
+    }
+}
+
+window.closeLowonganDetail = function() {
+    document.getElementById('lowongan-detail-content').style.display = 'none';
+    document.getElementById('lowongan-main-content').style.display = 'block';
+    window.scrollTo(0, 0);
+}
 
 // --- FUNGSI HELPER: MENGUBAH URL YOUTUBE KE EMBED URL ---
 function getYouTubeEmbedUrl(url) {
@@ -614,7 +860,65 @@ function updateLiveTime() {
     setInterval(tick, 1000); 
 }
 
+async function fetchPrestasiList() {
+    const container = document.getElementById('prestasi-list-container');
+    if (!container) return;
 
+    try {
+        const response = await fetch(`${apiUrl}?query=${prestasiListQuery}`);
+        
+        if (!response.ok) {
+            throw new Error(`Gagal fetch prestasi. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const list = result.result;
+
+        container.innerHTML = '';
+
+        if (!list || list.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada data prestasi siswa.</p>';
+            return;
+        }
+
+        // Render kartu prestasi
+        container.innerHTML = list.map(item => {
+            const fotoUrl = item.fotoRef 
+                ? `${buildImageUrl(item.fotoRef)}?w=400&h=250&fit=crop&auto=format&q=75`
+                : 'https://via.placeholder.com/400x250?text=Foto+Prestasi';
+
+            // Tentukan warna badge berdasarkan tingkat
+            const badgeColors = {
+                'Internasional': 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;',
+                'Nasional': 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;',
+                'Provinsi': 'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;',
+                'Kota': 'background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;',
+                'Lainnya': 'background: #e0e0e0; color: #333;'
+            };
+
+            const badgeStyle = badgeColors[item.tingkat] || badgeColors['Lainnya'];
+
+            return `
+                <div class="prestasi-card">
+                    <span class="prestasi-badge" style="${badgeStyle}">${item.tingkat || 'Umum'}</span>
+                    <div class="prestasi-img-wrapper">
+                        <img src="${fotoUrl}" class="prestasi-img" alt="${item.nama}">
+                    </div>
+                    <div class="prestasi-content">
+                        <h3 class="prestasi-title">${item.namaPrestasi}</h3>
+                        <span class="prestasi-event">${item.namaLomba}</span>
+                        <span class="prestasi-student">${item.nama}${item.kelas ? ' (' + item.kelas + ')' : ''}</span>
+                        <span class="prestasi-year">${item.tahun}${item.penyelenggara ? ' | ' + item.penyelenggara : ''}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error("Kesalahan Fetch Prestasi:", error);
+        container.innerHTML = '<p class="section-lead">Gagal memuat data prestasi siswa. Periksa koneksi Sanity.</p>';
+    }
+}
 // --- FUNGSI UTAMA 1: FETCH DATA HOMEPAGE (Hero, About, Visi Misi) ---
 async function fetchHomepageContent() {
     const heroTitle = document.getElementById('hero-title');
@@ -2164,7 +2468,53 @@ async function fetchDeveloperProfile() {
         container.innerHTML = '<p class="section-lead" style="color:white;">Gagal memuat profil developer. Periksa koneksi Sanity.</p>';
     }
 }
+// --- [START] FITUR KONTAK & ASPIRASI ---
+async function handleFeedbackForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const statusEl = document.getElementById('feedback-status');
+    const btn = document.getElementById('btn-submit-feedback');
+    
+    // Ambil data
+    const formData = {
+        name: document.getElementById('fb-name').value,
+        kelas: document.getElementById('fb-class').value,
+        message: document.getElementById('fb-message').value
+    };
 
+    // UI Loading
+    btn.disabled = true;
+    btn.innerText = "Mengirim...";
+    statusEl.style.display = 'block';
+    statusEl.style.color = '#666';
+    statusEl.innerText = "Sedang mengirim masukan...";
+
+    try {
+        const response = await fetch('/api/submit-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            statusEl.style.color = '#008940';
+            statusEl.innerText = "✅ " + result.message;
+            form.reset();
+        } else {
+            throw new Error(result.message || 'Gagal mengirim.');
+        }
+    } catch (error) {
+        console.error(error);
+        statusEl.style.color = '#d32f2f';
+        statusEl.innerText = "❌ Terjadi kesalahan: " + error.message;
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Kirim Masukan";
+    }
+}
+// --- [END] FITUR KONTAK ---
 // --- [START] FUNGSI BARU BEASISWA ---
 
 function formatDeadline(dateTimeString) {
@@ -2306,6 +2656,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return; 
     }
 
+    const feedbackForm = document.getElementById('feedback-form');
+    if (feedbackForm) {
+        feedbackForm.addEventListener('submit', handleFeedbackForm);
+    }
+
+     // Inisialisasi Halaman Kebijakan Sekolah
+    if (document.getElementById('policy-content')) {
+        fetchSchoolPolicy();
+    }
     // 2. LANJUTKAN INISIALISASI HANYA JIKA MAINTENANCE NON-AKTIF
     setupMenuToggle(); // <-- FUNGSI YANG DIPERBAIKI DIPANGGIL DI SINI
     
@@ -2330,6 +2689,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('log-container')) {
         fetchChangelog();
     }
+if (document.getElementById('prestasi-list-container')) {
+    fetchPrestasiList();
+}
 
     // Inisialisasi Halaman Pusat Informasi
     if (document.getElementById('info-container')) {
@@ -2365,10 +2727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-    // Inisialisasi Halaman Kebijakan Sekolah
-    if (document.getElementById('policy-content')) {
-        fetchSchoolPolicy();
-    }
+   
 
 
     // Inisialisasi Halaman Alumni Connect
@@ -2392,3 +2751,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('beasiswa-list-container')) {
         fetchBeasiswaList();
     }
+
+    if (document.getElementById('lowongan-list-container')) {
+    fetchLowonganList();
+}   
