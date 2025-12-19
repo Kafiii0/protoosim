@@ -26,18 +26,18 @@
                 <nav>
                     <ul id="nav-links">
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <a href="#" class="dropbtn">OSIM AREA</a>
                     <div class="dropdown-content">
                         <a href="info.html">Pengumuman & Berita</a>
                         <a href="struktur.html">Struktur Organisasi</a>
                         <a href="arsip.html">Arsip Dokumen OSIM</a>
                         <a href="event.html">Event Mendatang</a>
                         <a href="ekskul.html">Ekstrakurikuler</a>
-                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                        <a href="coming-soon.html?feature=sipom">SIPOM - Sistem Pemilihan OSIM <span class="coming-soon-badge">Coming Soon</span></a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <a href="#" class="dropbtn active">Siswa AREA</a>
                     <div class="dropdown-content">
                         <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
                         <a href="beasiswa.html">Beasiswa</a>
@@ -49,14 +49,14 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <a href="#" class="dropbtn">Alumni Connect</a>
                     <div class="dropdown-content">
                         <a href="alumni.html">Direktori Persebaran Alumni</a>
                         <a href="https://docs.google.com/forms/d/e/1FAIpQLScK2gDXIGMH7apLJ6qS1HuebfozG-7MO9Gs5S4sgE7qwerSIQ/viewform">Daftar Menjadi Alumni MAN 1 Medan</a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Info ▼</a>
+                    <a href="#" class="dropbtn">Info</a>
                     <div class="dropdown-content">
                         <a href="who-made-this.html">Who Made This</a>
                         <a href="changelog.html">Log Perubahan</a>
@@ -64,7 +64,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Official ▼</a>
+                    <a href="#" class="dropbtn">Official</a>
                     <div class="dropdown-content">
                         <a href="https://man1medan.sch.id/">MAN 1 MEDAN Official Website</a>
                         <a href="https://perpustakaan.man1medan.sch.id/">Perpustakaan MAN 1 Medan</a>
@@ -77,11 +77,21 @@
         </header>
 
     <div id="univ-main-content">
-        <section class="content-section" style="padding-top: 3rem;">
+        <section class="content-section univ-section" style="padding-top: 3rem; background-color: #f8f9fa;">
             <div class="container">
-                <h2>Info Universitas & Kampus</h2>
+                <h2 class="univ-title" style="background: none !important; background-color: transparent !important; padding: 0 !important; margin-bottom: 1rem; color: #34495e; position: static;">Info Universitas & Kampus</h2>
                 <p class="section-lead">Temukan kampus impianmu dan lihat siapa saja alumni MAN 1 Medan yang sudah ada di sana.</p>
                 <p>*Tata letak universitas tidak berdasarkan ranking dan penilaian apapun, hanya posisi acak</p>
+                
+                <!-- Search Container -->
+                <div class="univ-search-container">
+                    <div class="univ-search-box">
+                        <input type="text" id="univ-search-input" placeholder="🔍 Cari universitas..." class="univ-search-input" onkeyup="searchUniversities()">
+                    </div>
+                </div>
+                
+                <div id="univ-results-count" class="univ-results-count"></div>
+                
                 <div id="univ-list-container" class="univ-grid">
                     <p class="section-lead">Memuat daftar universitas...</p>
                 </div>
@@ -127,6 +137,32 @@
             </div>
         </div>
     </footer>
+    <script src="script.js"></script>
+    <script>
+    // Fallback hamburger menu
+    (function() {
+        setTimeout(function() {
+            const btn = document.querySelector('.menu-toggle');
+            const nav = document.getElementById('nav-links');
+            if (!btn || !nav || btn.getAttribute('data-menu-toggle-initialized')) return;
+            let isToggling = false;
+            const handleClick = function(e) {
+                if (isToggling) { e.preventDefault(); e.stopPropagation(); return false; }
+                isToggling = true;
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.toggle('active');
+                setTimeout(function() { isToggling = false; }, 300);
+                return false;
+            };
+            btn.onclick = handleClick;
+            btn.ontouchend = handleClick;
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+            btn.style.zIndex = '99999';
+        }, 500);
+    })();
+    </script>
 
 </body>
 </html>

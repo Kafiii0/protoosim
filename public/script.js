@@ -6,6 +6,31 @@ const dataset = 'production';
 const apiVersion = 'v2021-10-26'; 
 const apiUrl = `https://${projectId}.api.sanity.io/${apiVersion}/data/query/${dataset}`;
 
+// --- SECURITY: INPUT SANITIZATION FUNCTION ---
+function sanitizeInput(input) {
+    if (typeof input !== 'string') {
+        return '';
+    }
+    
+    // Remove HTML tags to prevent XSS
+    let sanitized = input.replace(/<[^>]*>/g, '');
+    
+    // Escape special characters that could be used for injection
+    sanitized = sanitized
+        .replace(/[<>'"&]/g, '') // Remove potentially dangerous characters
+        .replace(/[{}[\]\\|`~!@#$%^*()+=\/]/g, ''); // Remove special characters
+    
+    // Trim whitespace
+    sanitized = sanitized.trim();
+    
+    // Limit length to prevent DoS
+    if (sanitized.length > 200) {
+        sanitized = sanitized.substring(0, 200);
+    }
+    
+    return sanitized;
+}
+
 // GROQ Queries
 const groqHomepageQuery = encodeURIComponent(
     // PASTIKAN isMaintenanceMode di-fetch di sini
@@ -29,12 +54,25 @@ const changelogQuery = encodeURIComponent(
 );
 
 const informationQuery = encodeURIComponent(
-    `*[_type == "informationPost"] | order(publishedAt desc) {title, publishedAt, slug}`
+    `*[_type == "informationPost"] | order(coalesce(isPinned, false) desc, publishedAt desc) {
+        title, 
+        publishedAt, 
+        slug,
+        excerpt,
+        category,
+        isPinned,
+        "mainImageRef": mainImage.asset._ref
+    }`
 );
 
 const upcomingEventQuery = encodeURIComponent(
     `*[_type == "upcomingEvent" && eventDateTime > now()] | order(eventDateTime asc) {
-        title, slug, eventDateTime, location, mainImage, description
+        title, 
+        slug, 
+        eventDateTime, 
+        location, 
+        description,
+        "mainImageRef": mainImage.asset._ref
     }`
 );
 
@@ -79,7 +117,7 @@ const schoolPolicyQuery = encodeURIComponent(
 
 // QUERY DIPERBARUI: Mengambil photoRef (Asset Reference ID)
 const alumniDirectoryQuery = encodeURIComponent(
-    `*[_type == "alumni" && isFeatured == true] | order(graduationYear desc) {
+    `*[_type == "alumni"] | order(graduationYear desc) {
         name, graduationYear, currentJob, currentLocation, major, contactEmail, socialMedia, currentEducationInstitution, profilePhoto, coordinates, "photoRef": profilePhoto.asset._ref 
     }`
 );
@@ -87,23 +125,35 @@ const alumniDirectoryQuery = encodeURIComponent(
 
 // --- KODE EKSKUL (DENGAN PERBAIKAN) ---
 const ekskulListQuery = encodeURIComponent(
-    `*[_type == "ekstrakurikuler"] | order(title asc) {
-        title, slug, "logoRef": logo.asset._ref
+    `*[_type == "ekstrakurikuler" && (!defined(isActive) || isActive == true)] | order(title asc) {
+        title, 
+        slug, 
+        shortDescription,
+        category,
+        "logoRef": logo.asset._ref,
+        isActive
     }`
 );
 
 const ekskulDetailQuery = (slug) => encodeURIComponent(
     `*[_type == "ekstrakurikuler" && slug.current == "${slug}"][0]{
         title,
+        shortDescription,
+        category,
         pembimbing,
         struktur,
         tujuan,
         jadwalLatihan,
+        lokasiLatihan,
         lokasiParade,
         prestasi,
         requirement,
         linkFormulir,
-        "logoRef": logo.asset._ref
+        isActive,
+        "logoRef": logo.asset._ref,
+        gallery[]{
+            "imageRef": asset._ref
+        }
     }`
 );
 
@@ -249,6 +299,10 @@ const lowonganDetailQuery = (slug) => encodeURIComponent(
 // --- [TAMBAHAN FUNGSI BARU] ---
 
 // 1. Fetch List Universitas
+// Store university data globally for filtering
+let universityDataCache = [];
+let currentUnivSearchQuery = '';
+
 async function fetchUniversityList() {
     const container = document.getElementById('univ-list-container');
     if (!container) return;
@@ -256,58 +310,133 @@ async function fetchUniversityList() {
     try {
         const response = await fetch(`${apiUrl}?query=${universityListQuery}`);
         const result = await response.json();
-        const list = result.result;
+        universityDataCache = result.result || [];
 
-        if (!list || list.length === 0) {
+        if (!universityDataCache || universityDataCache.length === 0) {
             container.innerHTML = '<p class="section-lead">Belum ada data universitas.</p>';
+            updateUnivResultsCount(0);
             return;
         }
 
-        container.innerHTML = list.map(univ => `
-            <div class="univ-card" onclick="openUnivDetail('${univ.slug.current}')">
-                <img src="${univ.logoUrl ? univ.logoUrl : 'https://via.placeholder.com/100?text=UNIV'}" alt="${univ.name}" class="univ-logo">
-                <span class="univ-rank">${univ.ranking || 'Kampus Unggulan'}</span>
-                <h3>${univ.name}</h3>
-                <p class="univ-location">📍 ${univ.location || 'Indonesia'}</p>
-                <p class="click-indicator" style="margin-top:auto; font-size:0.85rem; color:#008940;">[Lihat Detail & Alumni]</p>
-            </div>
-        `).join('');
+        applyUnivFiltersAndSearch();
 
     } catch (error) {
         console.error("Error fetching universities:", error);
         container.innerHTML = '<p class="section-lead">Gagal memuat data universitas.</p>';
+        updateUnivResultsCount(0);
+    }
+}
+
+function applyUnivFiltersAndSearch() {
+    let filtered = [...universityDataCache];
+
+    // Apply search query with sanitization
+    if (currentUnivSearchQuery && currentUnivSearchQuery.trim() !== '') {
+        const query = sanitizeInput(currentUnivSearchQuery).toLowerCase().trim();
+        if (query) {
+            filtered = filtered.filter(univ => {
+                const name = (univ.name || '').toLowerCase();
+                const location = (univ.location || '').toLowerCase();
+                const ranking = (univ.ranking || '').toLowerCase();
+                return name.includes(query) || location.includes(query) || ranking.includes(query);
+            });
+        }
+    }
+
+    updateUnivResultsCount(filtered.length);
+    renderUniversityList(filtered);
+}
+
+function updateUnivResultsCount(count) {
+    const countEl = document.getElementById('univ-results-count');
+    if (countEl) {
+        countEl.innerHTML = `<p class="univ-count-text">Menampilkan <strong>${count}</strong> dari ${universityDataCache.length} universitas</p>`;
+    }
+}
+
+function renderUniversityList(list) {
+    const container = document.getElementById('univ-list-container');
+    if (!container) return;
+
+    if (list.length === 0) {
+        container.innerHTML = '<p class="section-lead">Tidak ada universitas yang sesuai dengan pencarian.</p>';
+        return;
+    }
+
+    container.innerHTML = list.map(univ => {
+        const name = univ.name || 'Nama Tidak Tersedia';
+        const location = univ.location || 'Indonesia';
+        const ranking = univ.ranking || 'Kampus Unggulan';
+        const slug = univ.slug?.current || '';
+        
+        return `
+            <div class="univ-card" onclick="openUnivDetail('${slug}')">
+                <img src="${univ.logoUrl ? univ.logoUrl : 'https://via.placeholder.com/100?text=UNIV'}" alt="${name}" class="univ-logo">
+                <span class="univ-rank">${ranking}</span>
+                <h3>${name}</h3>
+                <p class="univ-location">📍 ${location}</p>
+                <p class="click-indicator" style="margin-top:auto; font-size:0.85rem; color:#008940;">[Lihat Detail & Alumni]</p>
+            </div>
+        `;
+    }).join('');
+}
+
+window.searchUniversities = function() {
+    const searchInput = document.getElementById('univ-search-input');
+    if (searchInput) {
+        // Sanitize input before using
+        currentUnivSearchQuery = searchInput.value || '';
+        applyUnivFiltersAndSearch();
     }
 }
 
 // 2. Buka Detail Universitas + Load Alumni
 window.openUnivDetail = async function(slug) {
-    document.getElementById('univ-main-content').style.display = 'none';
+    if (!slug) {
+        console.error('Slug tidak valid');
+        return;
+    }
+    
+    // Sanitize slug input to prevent injection
+    const sanitizedSlug = sanitizeInput(slug);
+    
+    const univMainContent = document.getElementById('univ-main-content');
     const detailContent = document.getElementById('univ-detail-content');
     const renderEl = document.getElementById('univ-detail-render');
     const alumniContainer = document.getElementById('univ-alumni-container');
+    const searchContainer = document.querySelector('.univ-search-container');
+    const resultsCount = document.getElementById('univ-results-count');
     
-    detailContent.style.display = 'block';
-    renderEl.innerHTML = '<p>Memuat data kampus...</p>';
-    alumniContainer.innerHTML = '<p>Mencari alumni di kampus ini...</p>';
+    if (univMainContent) univMainContent.style.display = 'none';
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (resultsCount) resultsCount.style.display = 'none';
+    
+    if (detailContent) detailContent.style.display = 'block';
+    if (renderEl) renderEl.innerHTML = '<p>Memuat data kampus...</p>';
+    if (alumniContainer) alumniContainer.innerHTML = '<p>Mencari alumni di kampus ini...</p>';
     window.scrollTo(0, 0);
 
     try {
-        // A. Ambil Detail Kampus
-        const res = await fetch(`${apiUrl}?query=${universityDetailQuery(slug)}`);
+        // A. Ambil Detail Kampus - use sanitized slug
+        const res = await fetch(`${apiUrl}?query=${universityDetailQuery(sanitizedSlug)}`);
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const { result: univ } = await res.json();
 
         if (univ) {
             renderEl.innerHTML = `
-                <div class="koorbid-detail-header">
-                    <img src="${univ.logoUrl ? univ.logoUrl : ''}" style="width:150px; margin-bottom:1rem;">
-                    <h1 class="detail-title">${univ.name}</h1>
-                    <p style="font-size:1.2rem; color:#666;">📍 ${univ.location || '-'}</p>
-                </div>
-                
-                <div class="detail-section" style="text-align:center;">
-                    ${univ.website ? `<a href="${univ.website}" target="_blank" class="cta-button">Kunjungi Website Resmi</a>` : ''}
-                    <div style="margin-top: 2rem; text-align: left;">
-                        ${renderPortableText(univ.details) || `<p>${univ.description || 'Belum ada informasi detail.'}</p>`}
+                <div class="univ-detail-layout">
+                    <div class="univ-detail-content">
+                        <h1 class="univ-detail-title">${univ.name}</h1>
+                        <p class="univ-detail-location">📍 ${univ.location || '-'}</p>
+                        ${univ.website ? `<a href="${univ.website}" target="_blank" class="cta-button univ-website-btn">Kunjungi Website Resmi</a>` : ''}
+                        <div class="univ-detail-description">
+                            ${renderPortableText(univ.details) || `<p>${univ.description || 'Belum ada informasi detail.'}</p>`}
+                        </div>
+                    </div>
+                    <div class="univ-detail-logo-wrapper">
+                        <img src="${univ.logoUrl ? univ.logoUrl : ''}" alt="${univ.name}" class="univ-detail-logo">
                     </div>
                 </div>
             `;
@@ -321,12 +450,20 @@ window.openUnivDetail = async function(slug) {
         }
     } catch (error) {
         console.error("Error detail univ:", error);
+        if (renderEl) {
+            renderEl.innerHTML = '<p class="section-lead">Gagal memuat data universitas. Silakan coba lagi.</p>';
+        }
     }
 }
 
 async function fetchAlumniByUniv(univName, container) {
+    if (!container) return;
+    
     try {
         const res = await fetch(`${apiUrl}?query=${alumniByUnivQuery(univName)}`);
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const { result: alumniList } = await res.json();
 
         if (!alumniList || alumniList.length === 0) {
@@ -334,10 +471,9 @@ async function fetchAlumniByUniv(univName, container) {
             return;
         }
 
-        // Render kartu alumni (Reuse style yang ada)
+        // Render kartu alumni tanpa foto profil
         container.innerHTML = alumniList.map(a => `
             <div class="alumni-card">
-                <img src="${a.photoRef ? buildImageUrl(a.photoRef)+'?w=100&h=100&fit=crop' : 'https://via.placeholder.com/100'}" class="alumni-photo">
                 <h4>${a.name}</h4>
                 <p style="font-size:0.9rem; font-weight:bold; color:#008940">${a.major || 'Mahasiswa'}</p>
                 <div style="margin-top:10px; font-size:0.85rem;">
@@ -349,13 +485,24 @@ async function fetchAlumniByUniv(univName, container) {
         `).join('');
 
     } catch (e) {
-        container.innerHTML = '<p>Gagal memuat data alumni.</p>';
+        console.error("Error fetching alumni:", e);
+        if (container) {
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Gagal memuat data alumni.</p>';
+        }
     }
 }
 
 window.closeUnivDetail = function() {
-    document.getElementById('univ-detail-content').style.display = 'none';
-    document.getElementById('univ-main-content').style.display = 'block';
+    const univMainContent = document.getElementById('univ-main-content');
+    const univDetailContent = document.getElementById('univ-detail-content');
+    const searchContainer = document.querySelector('.univ-search-container');
+    const resultsCount = document.getElementById('univ-results-count');
+    
+    if (univMainContent) univMainContent.style.display = 'block';
+    if (searchContainer) searchContainer.style.display = 'flex';
+    if (resultsCount) resultsCount.style.display = 'block';
+    
+    if (univDetailContent) univDetailContent.style.display = 'none';
     window.scrollTo(0, 0);
 }
 
@@ -454,6 +601,26 @@ window.closeKompetisiDetail = function() {
 let globalArchiveDocuments = [];
 let alumniDataCache = []; // Cache data alumni
 let mapLoadAttempt = 0; // Hitungan percobaan load peta
+let currentAlumniPage = 1; // Current page for pagination
+let alumniItemsPerPage = 24; // Items per page (24 = 3 rows x 4 columns on desktop)
+let currentAlumniSearchQuery = ''; // Current search query
+let currentAlumniYearFilter = 'all'; // Current year filter
+let currentAlumniLocationFilter = 'all'; // Current location filter
+let currentAlumniMajorFilter = 'all'; // Current major filter
+let alumniMapInstance = null; // Store map instance for clustering
+let alumniMarkers = []; // Store markers for clustering
+
+// Store data globally for filtering
+let infoDataCache = [];
+let currentInfoCategoryFilter = 'all';
+let currentInfoSearchQuery = '';
+
+let eventDataCache = [];
+let currentEventSearchQuery = '';
+
+let ekskulDataCache = [];
+let currentCategoryFilter = 'all';
+let currentSearchQuery = '';
 
 
 // --- FUNGSI KRITIS: CEK MAINTENANCE MODE DAN BYPASS DEVELOPER ---
@@ -523,6 +690,7 @@ async function fetchLowonganList() {
     return false;
 }
 // ------------------------------------------
+
 
 // --- FUNGSI HELPER: MEMBUAT URL GAMBAR DARI ASSET ID ---
 // === [START] FUNGSI YANG DIPERBAIKI (FIX BUG LOGO) ===
@@ -927,14 +1095,21 @@ async function fetchHomepageContent() {
     const visiText = document.getElementById('visi-text');
     const misiText = document.getElementById('misi-text');
 
-    if (heroTitle) heroTitle.innerText = "Memuat Konten...";
-    if (heroSubtitle) heroSubtitle.innerText = "Harap tunggu sebentar...";
-    if (aboutText) aboutText.innerText = "Memuat deskripsi...";
-    if (visiText) visiText.innerText = "Memuat Visi...";
-    if (misiText) misiText.innerText = "Memuat Misi...";
+    // Set default values immediately (no waiting)
+    if (heroTitle) heroTitle.innerText = "Selamat Datang di OSIM MAN 1 Medan";
+    if (heroSubtitle) heroSubtitle.innerText = "Wadah Aspirasi, Kreativitas, dan Prestasi Siswa";
+    if (aboutText) aboutText.innerText = "Organisasi Siswa Intra Madrasah (OSIM) MAN 1 Medan adalah wadah bagi siswa untuk mengembangkan potensi, kreativitas, dan prestasi.";
+    if (visiText) visiText.innerText = "Menjadi organisasi siswa yang unggul, inovatif, dan berkarakter.";
+    if (misiText) misiText.innerText = "Mengembangkan potensi siswa melalui berbagai kegiatan positif dan bermanfaat.";
     
+    // Fetch data with timeout
     try {
-        const response = await fetch(`${apiUrl}?query=${groqHomepageQuery}`);
+        const fetchPromise = fetch(`${apiUrl}?query=${groqHomepageQuery}`);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 5000)
+        );
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
         
         if (!response.ok) {
             throw new Error(`Gagal mengambil data Homepage. Status: ${response.status}`);
@@ -943,9 +1118,14 @@ async function fetchHomepageContent() {
         const result = await response.json();
         const data = result.result;
         
+        // Update dengan data dari API jika ada
         if (data) {
-            if (heroTitle) heroTitle.innerText = data.heroTitle || "Selamat Datang";
-            if (heroSubtitle) heroSubtitle.innerText = data.heroSubtitle || "Wadah Aspirasi Siswa";
+            if (heroTitle && data.heroTitle) {
+                heroTitle.innerText = data.heroTitle;
+            }
+            if (heroSubtitle && data.heroSubtitle) {
+                heroSubtitle.innerText = data.heroSubtitle;
+            }
             
             if (aboutText && data.aboutUsText) {
                 aboutText.innerText = data.aboutUsText;
@@ -975,6 +1155,8 @@ async function fetchHomepageContent() {
         
     } catch (error) {
         console.error("Kesalahan Fetch Homepage:", error);
+        // Tetap gunakan default values yang sudah di-set di atas
+        // Tidak perlu update lagi karena sudah ada default
     }
 }
 
@@ -1146,6 +1328,112 @@ async function fetchGalleryImages() {
 }
 
 // --- FUNGSI UTAMA 5: FETCH LOG PERUBAHAN ---
+// Local changelog entries (akan digabungkan dengan data Sanity)
+const getDateString = (daysAgo) => {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return date.toISOString().split('T')[0];
+};
+
+const localChangelogEntries = [
+    {
+        date: getDateString(0),
+        featureName: 'Redesign Changelog dengan Timeline Modern',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Changelog sekarang menggunakan desain timeline modern dengan animasi fade-in yang smooth. Header dan konten diatur rata kiri untuk tampilan yang lebih profesional. Setiap entry memiliki status badge dengan gradient (Selesai ✨, Dikerjakan 🚧, Diperbarui 🔄) dan timeline marker berwarna sesuai status.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    },
+    {
+        date: getDateString(1),
+        featureName: 'Perbaikan CSS Event & Ekstrakurikuler',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Redesign lengkap halaman Event dan Ekstrakurikuler dengan card modern yang memiliki hover effects, shadow yang smooth, dan layout grid responsif. Ditambahkan juga styling untuk detail pages dengan typography yang lebih baik dan spacing yang optimal.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    },
+    {
+        date: getDateString(2),
+        featureName: 'Halaman Coming Soon yang Dinamis',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Membuat halaman Coming Soon yang reusable dan dinamis. Halaman ini dapat menampilkan konten berbeda berdasarkan parameter URL (feature), dilengkapi dengan animasi clock icon, badge "Coming Soon" dengan efek pulse, dan tombol navigasi yang intuitif. SIPOM dan fitur lainnya sekarang menggunakan halaman ini.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    },
+    {
+        date: getDateString(3),
+        featureName: 'Fitur Direktori Alumni yang Lengkap',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Implementasi fitur lengkap untuk direktori alumni: pagination (24 item per halaman), search real-time, filter berdasarkan tahun lulus, lokasi, dan jurusan. Integrasi Leaflet.markercluster untuk optimasi performa peta dengan banyak marker. UI yang responsif dengan loading states yang smooth.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    },
+    {
+        date: getDateString(4),
+        featureName: 'Perbaikan Navbar Dropdown',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Memperbaiki bug dropdown arrow yang muncul double (▼▼). Sekarang arrow hanya ditampilkan melalui CSS, menghilangkan karakter manual yang menyebabkan duplikasi. Dropdown behavior konsisten di semua halaman dengan animasi yang smooth.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    },
+    {
+        date: getDateString(5),
+        featureName: 'Peningkatan UI/UX Global',
+        description: [
+            {
+                _type: 'block',
+                children: [
+                    {
+                        _type: 'span',
+                        text: 'Berbagai peningkatan UI/UX di seluruh website: modern card designs untuk informasi, event, dan ekstrakurikuler; responsive improvements untuk mobile devices; konsistensi styling di semua halaman; dan optimasi performa rendering dengan caching yang lebih baik.'
+                    }
+                ]
+            }
+        ],
+        status: 'completed'
+    }
+];
+
 async function fetchChangelog() {
     const logContainer = document.getElementById('log-container');
     
@@ -1153,37 +1441,76 @@ async function fetchChangelog() {
 
     try {
         const response = await fetch(`${apiUrl}?query=${changelogQuery}`);
-        if (!response.ok) {
-            throw new Error(`Gagal fetch log perubahan. Status: ${response.status}`);
+        let logList = [];
+        
+        if (response.ok) {
+            const result = await response.json();
+            logList = result.result || [];
         }
 
-        const result = await response.json();
-        const logList = result.result;
+        // Merge local entries with Sanity data
+        const allLogs = [...localChangelogEntries, ...logList];
+        
+        // Sort by date (newest first)
+        allLogs.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB - dateA;
+        });
 
         logContainer.innerHTML = ''; 
 
-        if (logList.length === 0) {
+        if (allLogs.length === 0) {
             logContainer.innerHTML = '<p class="section-lead">Belum ada log perubahan yang dicatat.</p>';
             return;
         }
 
-        logList.forEach(log => {
+        allLogs.forEach((log, index) => {
             const statusClass = `status-${log.status.toLowerCase().replace(/ /g, '_')}`;
             const statusText = log.status === 'completed' ? 'Selesai' : (log.status === 'in_progress' ? 'Dikerjakan' : 'Diperbarui');
-            const statusIcon = log.status === 'completed' ? '✅' : (log.status === 'in_progress' ? '🛠️' : '🔄');
+            const statusIcon = log.status === 'completed' ? '✨' : (log.status === 'in_progress' ? '🚧' : '🔄');
+            
+            // Get status color for timeline dot
+            let statusColor = '#008940'; // default green
+            if (log.status === 'completed') {
+                statusColor = '#28a745';
+            } else if (log.status === 'in_progress') {
+                statusColor = '#ffc107';
+            } else {
+                statusColor = '#17a2b8';
+            }
             
             // PERUBAHAN: Gunakan renderPortableText untuk deskripsi
             const descriptionHtml = renderPortableText(log.description);
             
+            // Format date nicely
+            const formattedDate = log.date ? new Date(log.date).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : log.date;
+            
             const logHtml = `
-                <div class="log-entry">
-                    <div class="log-header">
-                        <span class="log-feature">${log.featureName}</span>
-                        <span class="log-date">${log.date}</span>
+                <div class="timeline-item" style="animation-delay: ${index * 0.1}s;">
+                    <div class="timeline-marker" style="background: ${statusColor};">
+                        <div class="timeline-dot"></div>
                     </div>
-                    <span class="log-status ${statusClass}">${statusIcon} ${statusText}</span>
-                    <div class="log-description">
-                        ${descriptionHtml} 
+                    <div class="timeline-content">
+                        <div class="log-entry-modern">
+                            <div class="log-entry-header">
+                                <div class="log-feature-wrapper">
+                                    <h3 class="log-feature-modern">${log.featureName || 'Update'}</h3>
+                                    <span class="log-date-modern">📅 ${formattedDate}</span>
+                                </div>
+                                <span class="log-status-modern ${statusClass}">
+                                    <span class="status-icon">${statusIcon}</span>
+                                    <span class="status-text">${statusText}</span>
+                                </span>
+                            </div>
+                            <div class="log-description-modern">
+                                ${descriptionHtml} 
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1199,17 +1526,65 @@ async function fetchChangelog() {
 // --- [START] CV MAKER LOGIC (UPDATED) ---
 
 window.updateCV = function() {
-    const getVal = (id, def) => document.getElementById(id)?.value || def;
+    const getVal = (id, def) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : def;
+    };
 
     // Personal Info
     document.getElementById('preview-name').innerText = getVal('input-name', 'NAMA LENGKAP');
-    document.getElementById('preview-headline').innerText = getVal('input-headline', '');
-    document.getElementById('preview-contact').innerText = getVal('input-contact', 'Alamat | Email | No HP | Link');
+    
+    const headline = getVal('input-headline', '');
+    const headlineEl = document.getElementById('preview-headline');
+    if (headline) {
+        headlineEl.innerText = headline;
+        headlineEl.style.display = 'block';
+    } else {
+        headlineEl.style.display = 'none';
+    }
+    
+    // Format kontak yang lebih baik
+    const email = getVal('input-email', '');
+    const phone = getVal('input-phone', '');
+    const location = getVal('input-location', '');
+    const linkedin = getVal('input-linkedin', '');
+    
+    const contactParts = [];
+    if (email) contactParts.push(email);
+    if (phone) contactParts.push(phone);
+    if (location) contactParts.push(location);
+    if (linkedin) {
+        // Format LinkedIn URL lebih baik
+        let linkedinText = linkedin;
+        if (linkedin.includes('linkedin.com')) {
+            linkedinText = linkedin.replace(/^https?:\/\//, '').replace(/^www\./, '');
+        }
+        contactParts.push(linkedinText);
+    }
+    
+    document.getElementById('preview-contact').innerText = contactParts.length > 0 
+        ? contactParts.join(' | ') 
+        : 'Email | Nomor HP | Lokasi | LinkedIn/Portfolio';
     
     // Summary & Skills
-    document.getElementById('preview-summary').innerText = getVal('input-summary', 'Ringkasan profil Anda...');
+    const summary = getVal('input-summary', '');
+    document.getElementById('preview-summary').innerText = summary || 'Ringkasan profil Anda akan muncul di sini.';
     document.getElementById('preview-hard-skills').innerText = getVal('input-hard-skills', '-');
     document.getElementById('preview-soft-skills').innerText = getVal('input-soft-skills', '-');
+    
+    // Languages
+    const languages = getVal('input-languages', '');
+    const languagesEl = document.getElementById('preview-languages');
+    const languagesSection = document.getElementById('languages-section');
+    if (languagesEl) {
+        if (languages) {
+            languagesEl.innerText = languages;
+            if (languagesSection) languagesSection.style.display = 'flex';
+        } else {
+            languagesEl.innerText = '-';
+            if (languagesSection) languagesSection.style.display = 'none';
+        }
+    }
 
     // Helper for dynamic lists
     const updateList = (inputId, previewId, renderItem) => {
@@ -1239,10 +1614,11 @@ window.updateCV = function() {
 
     // 2. Experience Render
     updateList('experience-inputs', 'preview-experience', (item) => {
-        const role = item.querySelector('.exp-role').value;
-        const org = item.querySelector('.exp-org').value;
-        const year = item.querySelector('.exp-year').value;
-        const desc = item.querySelector('.exp-desc').value;
+        const role = item.querySelector('.exp-role')?.value || '';
+        const org = item.querySelector('.exp-org')?.value || '';
+        const year = item.querySelector('.exp-year')?.value || '';
+        const desc = item.querySelector('.exp-desc')?.value || '';
+        const achievement = item.querySelector('.exp-achievement')?.value || '';
         if (!role) return '';
         return `
             <div class="cv-list-item">
@@ -1251,7 +1627,8 @@ window.updateCV = function() {
                     <span class="cv-item-date">${year}</span>
                 </div>
                 <div class="cv-item-sub" style="padding-left: 12px;">${org}</div>
-                ${desc ? `<div class="cv-item-desc" style="padding-left: 12px;">${desc.replace(/\n/g, '<br>')}</div>` : ''}
+                ${desc ? `<div class="cv-item-desc" style="padding-left: 12px; margin-top: 3px;">${desc.replace(/\n/g, '<br>')}</div>` : ''}
+                ${achievement ? `<div class="cv-item-achievement" style="padding-left: 12px; margin-top: 3px; font-weight: 600; color: #008940;">✓ ${achievement.replace(/\n/g, '<br>')}</div>` : ''}
             </div>
         `;
     });
@@ -1269,79 +1646,212 @@ window.updateCV = function() {
 
 // Fungsi Tambah Input (Pendidikan, Pengalaman, Portofolio)
 window.addEducationField = () => {
-    const div = document.createElement('div'); div.className = 'dynamic-item';
-    div.innerHTML = `<input type="text" class="edu-school" placeholder="Nama Sekolah" oninput="updateCV()"><input type="text" class="edu-degree" placeholder="Jurusan" oninput="updateCV()"><input type="text" class="edu-year" placeholder="Tahun" oninput="updateCV()"><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    const div = document.createElement('div'); 
+    div.className = 'dynamic-item';
+    div.innerHTML = `
+        <input type="text" class="edu-school" placeholder="Nama Sekolah / Universitas *" oninput="updateCV()">
+        <input type="text" class="edu-degree" placeholder="Jurusan / Tingkat" oninput="updateCV()">
+        <input type="text" class="edu-year" placeholder="Tahun (Contoh: 2020 - 2023)" oninput="updateCV()">
+        <button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem;margin-top:5px;">🗑️ Hapus</button>
+    `;
     document.getElementById('education-inputs').appendChild(div);
 };
 
 window.addExperienceField = () => {
-    const div = document.createElement('div'); div.className = 'dynamic-item';
-    div.innerHTML = `<input type="text" class="exp-role" placeholder="Posisi / Jabatan" oninput="updateCV()"><input type="text" class="exp-org" placeholder="Organisasi / Perusahaan" oninput="updateCV()"><input type="text" class="exp-year" placeholder="Periode" oninput="updateCV()"><textarea class="exp-desc" rows="2" placeholder="Deskripsi tugas" oninput="updateCV()"></textarea><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    const div = document.createElement('div'); 
+    div.className = 'dynamic-item';
+    div.innerHTML = `
+        <input type="text" class="exp-role" placeholder="Posisi / Jabatan *" oninput="updateCV()">
+        <input type="text" class="exp-org" placeholder="Organisasi / Perusahaan *" oninput="updateCV()">
+        <input type="text" class="exp-year" placeholder="Periode (Contoh: Jan 2023 - Des 2024)" oninput="updateCV()">
+        <textarea class="exp-desc" rows="2" placeholder="Deskripsi tugas dan tanggung jawab..." oninput="updateCV()"></textarea>
+        <textarea class="exp-achievement" rows="2" placeholder="Pencapaian / Impact (Opsional)" oninput="updateCV()"></textarea>
+        <button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem;margin-top:5px;">🗑️ Hapus</button>
+    `;
     document.getElementById('experience-inputs').appendChild(div);
 };
 
 window.addPortfolioField = () => {
-    const div = document.createElement('div'); div.className = 'dynamic-item';
-    div.innerHTML = `<input type="text" class="port-title" placeholder="Nama Project / Sertifikat" oninput="updateCV()"><input type="text" class="port-desc" placeholder="Keterangan / Link" oninput="updateCV()"><button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem">Hapus</button>`;
+    const div = document.createElement('div'); 
+    div.className = 'dynamic-item';
+    div.innerHTML = `
+        <input type="text" class="port-title" placeholder="Judul Projek / Nama Sertifikat" oninput="updateCV()">
+        <input type="text" class="port-desc" placeholder="Keterangan / Link (Opsional)" oninput="updateCV()">
+        <button type="button" onclick="this.parentElement.remove(); updateCV()" style="color:red;border:none;background:none;cursor:pointer;font-size:0.8rem;margin-top:5px;">🗑️ Hapus</button>
+    `;
     document.getElementById('portfolio-inputs').appendChild(div);
 };
 // --- [END] CV MAKER LOGIC ---
 
 // --- FUNGSI UTAMA 6: FETCH PUSAT INFORMASI (LIST) ---
+// --- FUNGSI UTAMA 6: FETCH PUSAT INFORMASI (LIST) ---
 async function fetchInformationPosts() {
     const infoContainer = document.getElementById('info-container');
-    const infoDetailRender = document.getElementById('info-detail-render');
-    
     if (!infoContainer) return; 
 
     try {
-        const informationQueryWithBody = encodeURIComponent(
-            `*[_type == "informationPost"] | order(publishedAt desc) {title, publishedAt, slug, body}`
-        );
-        
-        const response = await fetch(`${apiUrl}?query=${informationQueryWithBody}`);
+        const response = await fetch(`${apiUrl}?query=${informationQuery}`);
         if (!response.ok) {
             throw new Error(`Gagal fetch informasi. Status: ${response.status}`);
         }
 
         const result = await response.json();
-        const infoList = result.result;
+        infoDataCache = result.result || [];
 
-        infoContainer.innerHTML = ''; 
+        console.log('Info data fetched:', infoDataCache.length, 'items');
+        console.log('Info data:', infoDataCache);
 
-        if (infoList.length === 0) {
-            infoContainer.innerHTML = '<p class="section-lead">Belum ada informasi yang dipublikasikan.</p>';
+        if (infoDataCache.length === 0) {
+            infoContainer.innerHTML = '<p class="section-lead">Belum ada informasi yang dipublikasikan. Pastikan data sudah di-publish di Sanity.</p>';
+            updateInfoResultsCount(0);
             return;
         }
 
-        infoList.forEach(item => {
-            const date = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('id-ID') : 'Tanggal Tidak Diketahui';
-            const slug = item.slug ? item.slug.current : '';
+        // Filter out items without slug (required field)
+        infoDataCache = infoDataCache.filter(info => info.slug && info.slug.current);
 
-            let snippet = 'Klik untuk detail selengkapnya...';
-            if (item.body && item.body.length > 0) {
-                const firstBlock = item.body[0];
-                if (firstBlock.children) {
-                    const text = firstBlock.children.map(span => span.text).join('');
-                    const maxLength = 100; 
-                    snippet = text.length > maxLength ? text.substring(0, maxLength).trim() + '...' : text;
-                }
-            }
+        if (infoDataCache.length === 0) {
+            infoContainer.innerHTML = '<p class="section-lead">Tidak ada informasi dengan slug yang valid. Pastikan semua postingan sudah memiliki slug.</p>';
+            updateInfoResultsCount(0);
+            return;
+        }
 
-            const cardHtml = `
-                <div class="info-card" onclick="openInfoDetail('${slug}')">
-                    <h3 class="info-title">${item.title}</h3>
-                    <p class="info-snippet" style="font-size: 0.95rem; color: #555; margin: 0.5rem 0 0.8rem 0;">${snippet}</p>
-                    <p class="info-date">Dipublikasikan pada: ${date}</p>
-                    <p class="click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Baca Selengkapnya →]</p>
-                </div>
-            `;
-            infoContainer.innerHTML += cardHtml;
-        });
+        applyInfoFiltersAndSearch();
 
     } catch (error) {
         console.error("Kesalahan Fetch Informasi:", error);
-        infoContainer.innerHTML = '<p class="section-lead">Gagal memuat Pusat Informasi. Periksa koneksi Sanity Anda.</p>';
+        const infoContainer = document.getElementById('info-container');
+        if (infoContainer) {
+            infoContainer.innerHTML = `<p class="section-lead">Gagal memuat Pusat Informasi. Error: ${error.message}</p>`;
+        }
+        updateInfoResultsCount(0);
+    }
+}
+
+function applyInfoFiltersAndSearch() {
+    let filtered = [...infoDataCache];
+
+    // Apply category filter
+    if (currentInfoCategoryFilter !== 'all') {
+        filtered = filtered.filter(info => info.category === currentInfoCategoryFilter);
+    }
+
+    // Apply search query
+    if (currentInfoSearchQuery.trim() !== '') {
+        const query = currentInfoSearchQuery.toLowerCase().trim();
+        filtered = filtered.filter(info => {
+            const title = (info.title || '').toLowerCase();
+            const excerpt = (info.excerpt || '').toLowerCase();
+            return title.includes(query) || excerpt.includes(query);
+        });
+    }
+
+    updateInfoResultsCount(filtered.length);
+    renderInfoList(filtered);
+}
+
+function updateInfoResultsCount(count) {
+    const countEl = document.getElementById('info-results-count');
+    if (countEl) {
+        if (count === 0) {
+            countEl.innerHTML = '<p class="section-lead">Tidak ada hasil ditemukan.</p>';
+        } else {
+            countEl.innerHTML = `<p class="info-count-text">Menampilkan <strong>${count}</strong> informasi</p>`;
+        }
+    }
+}
+
+function renderInfoList(infoList) {
+    const infoContainer = document.getElementById('info-container');
+    if (!infoContainer) return;
+
+    infoContainer.innerHTML = '';
+
+    infoList.forEach(item => {
+        // Skip if no slug
+        if (!item.slug || !item.slug.current) {
+            console.warn('Skipping item without slug:', item.title);
+            return;
+        }
+
+        const date = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) : 'Tanggal Tidak Diketahui';
+        const slug = item.slug.current;
+        const category = item.category || 'lainnya';
+        const categoryLabel = getInfoCategoryLabel(category);
+        const isPinned = item.isPinned === true;
+
+        // Get excerpt or use default
+        let excerpt = item.excerpt || 'Klik untuk membaca selengkapnya...';
+        if (typeof excerpt === 'string' && excerpt.length > 120) {
+            excerpt = excerpt.substring(0, 120).trim() + '...';
+        }
+
+        // Get image
+        let imageUrl = '';
+        let imageHtml = '';
+        if (item.mainImageRef) {
+            try {
+                imageUrl = `${buildImageUrl(item.mainImageRef)}?w=400&h=250&fit=crop&auto=format`;
+                imageHtml = `<div class="info-card-image"><img src="${imageUrl}" alt="${item.title || 'Info'}"></div>`;
+            } catch (e) {
+                console.warn('Error building image URL:', e);
+            }
+        }
+
+        const pinnedBadge = isPinned ? '<span class="info-pinned-badge">📌 Pinned</span>' : '';
+        const categoryBadge = `<span class="info-category-badge">${categoryLabel}</span>`;
+
+        const cardHtml = `
+            <div class="info-card-modern ${isPinned ? 'info-card-pinned' : ''}" onclick="openInfoDetail('${slug}')">
+                ${imageHtml}
+                <div class="info-card-content">
+                    <div class="info-card-header">
+                        ${pinnedBadge}
+                        ${categoryBadge}
+                    </div>
+                    <h3 class="info-title-modern">${item.title || 'Tanpa Judul'}</h3>
+                    <p class="info-excerpt">${excerpt}</p>
+                    <div class="info-card-footer">
+                        <span class="info-date-modern">📅 ${date}</span>
+                        <span class="info-read-more">Baca Selengkapnya →</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        infoContainer.innerHTML += cardHtml;
+    });
+}
+
+function getInfoCategoryLabel(category) {
+    const labels = {
+        'pengumuman': 'Pengumuman',
+        'berita': 'Berita',
+        'event': 'Event',
+        'kegiatan': 'Kegiatan',
+        'prestasi': 'Prestasi',
+        'lainnya': 'Lainnya'
+    };
+    return labels[category] || category;
+}
+
+window.filterInfoByCategory = function() {
+    const selectEl = document.getElementById('info-category-filter');
+    if (selectEl) {
+        currentInfoCategoryFilter = selectEl.value;
+        applyInfoFiltersAndSearch();
+    }
+}
+
+window.searchInfoPosts = function() {
+    const searchInput = document.getElementById('info-search-input');
+    if (searchInput) {
+        // Sanitize input before using
+        currentInfoSearchQuery = sanitizeInput(searchInput.value);
+        applyInfoFiltersAndSearch();
     }
 }
 
@@ -1418,18 +1928,32 @@ window.closeKoorbidDetail = function() {
 }
 
 // --- FUNGSI PUSAT INFORMASI DETAIL ROUTING ---
+// --- FUNGSI PUSAT INFORMASI DETAIL ROUTING ---
 window.openInfoDetail = async function(slug) {
+    // Sanitize slug input to prevent injection
+    const sanitizedSlug = sanitizeInput(slug);
+    
     const infoListContainer = document.getElementById('info-container');
     const infoDetailRender = document.getElementById('info-detail-render');
+    const searchFilterContainer = document.querySelector('.info-search-filter-container');
+    const resultsCount = document.getElementById('info-results-count');
     
     if (infoListContainer) infoListContainer.style.display = 'none';
+    if (searchFilterContainer) searchFilterContainer.style.display = 'none';
+    if (resultsCount) resultsCount.style.display = 'none';
     
     infoDetailRender.style.display = 'block';
     infoDetailRender.innerHTML = '<p class="section-lead">Memuat detail informasi...</p>';
     window.scrollTo(0, 0);
 
     const detailQuery = encodeURIComponent(
-        `*[_type == "informationPost" && slug.current == "${slug}"][0]{title, publishedAt, body, mainImage}`
+        `*[_type == "informationPost" && slug.current == "${sanitizedSlug}"][0]{
+            title, 
+            publishedAt, 
+            body, 
+            category,
+            "mainImageRef": mainImage.asset._ref
+        }`
     );
 
     try {
@@ -1438,31 +1962,43 @@ window.openInfoDetail = async function(slug) {
         const post = result.result;
 
         if (post) {
-            const formattedDate = new Date(post.publishedAt).toLocaleDateString('id-ID');
+            const formattedDate = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'Tanggal Tidak Diketahui';
             const bodyHtml = renderPortableText(post.body);
+            const categoryLabel = getInfoCategoryLabel(post.category || 'lainnya');
             
             let imageUrl = '';
-            if (post.mainImage && post.mainImage.asset && post.mainImage.asset._ref) {
-                imageUrl = `${buildImageUrl(post.mainImage.asset._ref)}?w=800&auto=format&q=85`;
+            let imageHtml = '';
+            if (post.mainImageRef) {
+                imageUrl = `${buildImageUrl(post.mainImageRef)}?w=1200&auto=format&q=85`;
+                imageHtml = `
+                    <div class="info-detail-image-wrapper">
+                        <img src="${imageUrl}" alt="${post.title}" class="info-detail-image">
+                    </div>
+                `;
             }
 
-            const imageHtml = imageUrl 
-                ? `<img src="${imageUrl}" alt="${post.title}" class="detail-image" style="max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">` 
-                : '';
-
             infoDetailRender.innerHTML = `
-                <button onclick="closeInfoDetail()" id="back-button" class="back-button">← Kembali ke Daftar Informasi</button>
-                <div class="detail-section">
-                    <h2 style="text-align: left; margin-bottom: 0.5rem; border-bottom: none !important;">${post.title}</h2>
+                <button onclick="closeInfoDetail()" id="back-info-button" class="info-back-button">← Kembali ke Daftar Informasi</button>
+                <article class="info-detail-article">
+                    <header class="info-detail-header-modern">
+                        <span class="info-detail-category">${categoryLabel}</span>
+                        <h1 class="info-detail-title">${post.title}</h1>
+                        <p class="info-detail-meta">📅 Dipublikasikan: ${formattedDate}</p>
+                    </header>
                     ${imageHtml}
-                    <p style="font-style: italic; color: #6c757d; margin-bottom: 2rem; font-size: 0.95rem;">Dipublikasikan: ${formattedDate}</p>
-                    <div class="info-body" style="text-align: left; color: #333; line-height: 1.7;">
+                    <div class="info-detail-body">
                         ${bodyHtml}
                     </div>
-                </div>
+                </article>
             `;
         } else {
-            detailRender.innerHTML = '<p class="section-lead">Informasi tidak ditemukan.</p>';
+            infoDetailRender.innerHTML = '<p class="section-lead">Informasi tidak ditemukan.</p>';
         }
     } catch (error) {
         console.error("Kesalahan Saat Memuat Detail Info:", error);
@@ -1472,9 +2008,15 @@ window.openInfoDetail = async function(slug) {
 
 window.closeInfoDetail = function() {
     const infoListContainer = document.getElementById('info-container');
-    if (infoListContainer) infoListContainer.style.display = 'block';
-
-    document.getElementById('info-detail-render').style.display = 'none';
+    const infoDetailRender = document.getElementById('info-detail-render');
+    const searchFilterContainer = document.querySelector('.info-search-filter-container');
+    const resultsCount = document.getElementById('info-results-count');
+    
+    if (infoListContainer) infoListContainer.style.display = 'grid';
+    if (searchFilterContainer) searchFilterContainer.style.display = 'flex';
+    if (resultsCount) resultsCount.style.display = 'block';
+    
+    if (infoDetailRender) infoDetailRender.style.display = 'none';
     window.scrollTo(0, 0);
 }
 
@@ -1518,6 +2060,7 @@ function updateCountdown(targetElement, targetDate) {
 
 
 // --- FUNGSI UTAMA 7: FETCH EVENT MENDATANG ---
+// --- FUNGSI UTAMA 7: FETCH EVENT MENDATANG ---
 async function fetchUpcomingEvents() {
     const eventContainer = document.getElementById('event-list-container');
     if (!eventContainer) return;
@@ -1529,78 +2072,178 @@ async function fetchUpcomingEvents() {
         }
 
         const result = await response.json();
-        const eventList = result.result;
+        eventDataCache = result.result || [];
         
-        eventContainer.innerHTML = '';
+        console.log('Event data fetched:', eventDataCache.length, 'items');
 
-        if (eventList.length === 0) {
+        if (eventDataCache.length === 0) {
             eventContainer.innerHTML = '<p class="section-lead">Belum ada event mendatang yang terdaftar saat ini.</p>';
+            updateEventResultsCount(0);
             return;
         }
 
-        eventList.forEach(event => {
-            let imageUrl = 'https://via.placeholder.com/350x200?text=Poster+Event';
-            if (event.mainImage && event.mainImage.asset && event.mainImage.asset._ref) {
-                imageUrl = `${buildImageUrl(event.mainImage.asset._ref)}?w=400&h=225&fit=crop&auto=format&q=75`;
-            }
-            
-            let snippet = 'Klik untuk melihat detail event...';
-            if (event.description && event.description.length > 0) {
-                const firstBlock = event.description[0];
-                if (firstBlock.children) {
-                    const text = firstBlock.children.map(span => span.text).join('');
-                    const maxLength = 80;
-                    snippet = text.length > maxLength ? text.substring(0, maxLength).trim() + '...' : text;
-                }
-            }
+        // Filter out items without slug
+        eventDataCache = eventDataCache.filter(event => event.slug && event.slug.current);
 
-            const cardHtml = `
-                <div class="event-card" onclick="openEventDetail('${event.slug.current}')">
-                    <div class="event-image-wrapper">
-                        <img src="${imageUrl}" alt="Poster ${event.title}">
-                    </div>
-                    <div class="event-content">
-                        <div>
-                            <h3>${event.title}</h3>
-                            <p class="event-location">${event.location || 'Lokasi Belum Diatur'}</p>
-                            <p style="font-size: 0.95rem; color: #555; margin: 0.5rem 0 0.8rem 0;">${snippet}</p>
-                            <p class="click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Lihat Detail →]</p>
-                        </div>
-                    </div>
-                    <div class="countdown-container" id="countdown-${event.slug.current}">
-                        </div>
-                </div>
-            `;
-            eventContainer.innerHTML += cardHtml;
-        });
+        if (eventDataCache.length === 0) {
+            eventContainer.innerHTML = '<p class="section-lead">Tidak ada event dengan slug yang valid.</p>';
+            updateEventResultsCount(0);
+            return;
+        }
 
-        eventList.forEach(event => {
-            const countdownElement = document.getElementById(`countdown-${event.slug.current}`);
-            if (countdownElement) {
-                updateCountdown(countdownElement, event.eventDateTime);
-            }
-        });
+        applyEventFiltersAndSearch();
 
     } catch (error) {
         console.error("Kesalahan Fetch Event:", error);
-        eventContainer.innerHTML = '<p class="section-lead">Gagal memuat Event Mendatang. Periksa koneksi Sanity Anda.</p>';
+        const eventContainer = document.getElementById('event-list-container');
+        if (eventContainer) {
+            eventContainer.innerHTML = '<p class="section-lead">Gagal memuat Event Mendatang. Periksa koneksi Sanity Anda.</p>';
+        }
+        updateEventResultsCount(0);
+    }
+}
+
+function applyEventFiltersAndSearch() {
+    let filtered = [...eventDataCache];
+
+    // Apply search query
+    if (currentEventSearchQuery.trim() !== '') {
+        const query = currentEventSearchQuery.toLowerCase().trim();
+        filtered = filtered.filter(event => {
+            const title = (event.title || '').toLowerCase();
+            const location = (event.location || '').toLowerCase();
+            return title.includes(query) || location.includes(query);
+        });
+    }
+
+    updateEventResultsCount(filtered.length);
+    renderEventList(filtered);
+}
+
+function updateEventResultsCount(count) {
+    const countEl = document.getElementById('event-results-count');
+    if (countEl) {
+        if (count === 0) {
+            countEl.innerHTML = '<p class="section-lead">Tidak ada hasil ditemukan.</p>';
+        } else {
+            countEl.innerHTML = `<p class="event-count-text">Menampilkan <strong>${count}</strong> event</p>`;
+        }
+    }
+}
+
+function renderEventList(eventList) {
+    const eventContainer = document.getElementById('event-list-container');
+    if (!eventContainer) return;
+
+    eventContainer.innerHTML = '';
+
+    eventList.forEach(event => {
+        const slug = event.slug ? event.slug.current : '';
+        if (!slug) return;
+
+        const eventDate = event.eventDateTime ? new Date(event.eventDateTime).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'Tanggal Belum Diatur';
+        
+        // Get excerpt from description
+        let excerpt = 'Klik untuk melihat detail event...';
+        if (event.description && event.description.length > 0) {
+            const firstBlock = event.description[0];
+            if (firstBlock.children) {
+                const text = firstBlock.children.map(span => span.text).join('');
+                const maxLength = 100;
+                excerpt = text.length > maxLength ? text.substring(0, maxLength).trim() + '...' : text;
+            }
+        }
+
+        // Get image
+        let imageUrl = '';
+        let imageHtml = '';
+        if (event.mainImageRef) {
+            try {
+                imageUrl = `${buildImageUrl(event.mainImageRef)}?w=500&h=300&fit=crop&auto=format&q=85`;
+                imageHtml = `<div class="event-card-image"><img src="${imageUrl}" alt="${event.title || 'Event'}"></div>`;
+            } catch (e) {
+                console.warn('Error building image URL:', e);
+            }
+        } else {
+            imageUrl = 'https://via.placeholder.com/500x300?text=Poster+Event';
+            imageHtml = `<div class="event-card-image"><img src="${imageUrl}" alt="${event.title || 'Event'}"></div>`;
+        }
+
+        const cardHtml = `
+            <div class="event-card-modern" onclick="openEventDetail('${slug}')">
+                ${imageHtml}
+                <div class="event-card-content-modern">
+                    <h3 class="event-title-modern">${event.title || 'Event'}</h3>
+                    <div class="event-meta">
+                        <span class="event-date-modern">📅 ${eventDate}</span>
+                        <span class="event-location-modern">📍 ${event.location || 'Lokasi Belum Diatur'}</span>
+                    </div>
+                    <p class="event-excerpt">${excerpt}</p>
+                    <div class="event-countdown-card" id="countdown-${slug}"></div>
+                    <div class="event-card-footer">
+                        <span class="event-read-more">Lihat Detail →</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        eventContainer.innerHTML += cardHtml;
+    });
+
+    // Initialize countdowns after rendering
+    eventList.forEach(event => {
+        const slug = event.slug ? event.slug.current : '';
+        if (!slug) return;
+        
+        const countdownElement = document.getElementById(`countdown-${slug}`);
+        if (countdownElement && event.eventDateTime) {
+            updateCountdown(countdownElement, event.eventDateTime);
+        }
+    });
+}
+
+window.searchEvents = function() {
+    const searchInput = document.getElementById('event-search-input');
+    if (searchInput) {
+        // Sanitize input before using
+        currentEventSearchQuery = sanitizeInput(searchInput.value);
+        applyEventFiltersAndSearch();
     }
 }
 
 
 // --- FUNGSI DETAIL EVENT ROUTING ---
+// --- FUNGSI DETAIL EVENT ROUTING ---
 window.openEventDetail = async function(slug) {
-    document.getElementById('event-main-content').style.display = 'none';
+    // Sanitize slug input to prevent injection
+    const sanitizedSlug = sanitizeInput(slug);
+    
+    const eventMainContent = document.getElementById('event-main-content');
     const detailContent = document.getElementById('event-detail-content');
     const detailRender = document.getElementById('event-detail-render');
+    const searchFilterContainer = document.querySelector('.event-search-filter-container');
+    const resultsCount = document.getElementById('event-results-count');
     
-    detailContent.style.display = 'block';
-    detailRender.innerHTML = '<p class="section-lead">Memuat detail event...</p>';
+    if (eventMainContent) eventMainContent.style.display = 'none';
+    if (searchFilterContainer) searchFilterContainer.style.display = 'none';
+    if (resultsCount) resultsCount.style.display = 'none';
+    
+    if (detailContent) detailContent.style.display = 'block';
+    if (detailRender) detailRender.innerHTML = '<p class="section-lead">Memuat detail event...</p>';
     window.scrollTo(0, 0); 
 
     const detailQuery = encodeURIComponent(
-        `*[_type == "upcomingEvent" && slug.current == "${slug}"][0]{
-            title, eventDateTime, location, mainImage, description
+        `*[_type == "upcomingEvent" && slug.current == "${sanitizedSlug}"][0]{
+            title, 
+            eventDateTime, 
+            location, 
+            description,
+            "mainImageRef": mainImage.asset._ref
         }`
     );
 
@@ -1614,39 +2257,64 @@ window.openEventDetail = async function(slug) {
         const event = result.result;
 
         if (event) {
-            const startDate = new Date(event.eventDateTime).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const descriptionHtml = renderPortableText(event.description);
+            const startDate = event.eventDateTime ? new Date(event.eventDateTime).toLocaleDateString('id-ID', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) : 'Tanggal Belum Diatur';
+            const descriptionHtml = renderPortableText(event.description || []);
             
-            let imageUrl = 'https://via.placeholder.com/900x500?text=Poster+Event'; 
-            if (event.mainImage && event.mainImage.asset && event.mainImage.asset._ref) {
-                imageUrl = `${buildImageUrl(event.mainImage.asset._ref)}?w=900&auto=format&q=85`;
+            let imageUrl = '';
+            let imageHtml = '';
+            if (event.mainImageRef) {
+                imageUrl = `${buildImageUrl(event.mainImageRef)}?w=1200&auto=format&q=85`;
+                imageHtml = `
+                    <div class="event-detail-image-wrapper">
+                        <img src="${imageUrl}" alt="${event.title || 'Event'}" class="event-detail-image">
+                    </div>
+                `;
+            }
+            
+            // Clear previous content first
+            if (detailRender) {
+                detailRender.innerHTML = '';
+            }
+            
+            // Show and position the back button
+            const backButton = document.getElementById('back-event-button');
+            if (backButton) {
+                backButton.style.display = 'block';
             }
             
             detailRender.innerHTML = `
-                <div class="koorbid-detail-header">
-                    <h1 class="detail-title">${event.title}</h1>
-                    <p class="detail-location">${event.location || 'Lokasi Belum Diatur'}</p>
-                    <img src="${imageUrl}" alt="Poster ${event.title}" class="detail-image-full">
-                </div>
-                
-                <div class="detail-section">
-                    <h2 style="margin-bottom: 0.5rem; color: #008940;">Hitung Mundur</h2>
-                    <div class="countdown-container" id="detail-countdown">
+                <article class="event-detail-article">
+                    <header class="event-detail-header-modern">
+                        <h1 class="event-detail-title">${event.title || 'Event'}</h1>
+                        <div class="event-detail-meta">
+                            <span class="event-detail-date">📅 ${startDate} WIB</span>
+                            <span class="event-detail-location">📍 ${event.location || 'Lokasi Belum Diatur'}</span>
                         </div>
-                    
-                    <h2 style="margin-top: 2rem; color: #008940;">Waktu & Tempat</h2>
-                    <p><strong>Tanggal:</strong> ${startDate} WIB</p>
-                    <p><strong>Lokasi:</strong> ${event.location || 'Belum Diatur'}</p>
-
-                    <div class="detail-description-content">
-                        <h3>Deskripsi Event</h3>
-                        ${descriptionHtml}
+                    </header>
+                    ${imageHtml}
+                    <div class="event-detail-body">
+                        <div class="event-countdown-section">
+                            <h2 class="event-countdown-title">⏰ Hitung Mundur</h2>
+                            <div class="countdown-container" id="detail-countdown"></div>
+                        </div>
+                        <div class="event-description-section">
+                            <h2 class="event-description-title">📋 Deskripsi Event</h2>
+                            <div class="event-description-content">
+                                ${descriptionHtml}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </article>
             `;
             
             const detailCountdownElement = document.getElementById('detail-countdown');
-            if(detailCountdownElement) {
+            if(detailCountdownElement && event.eventDateTime) {
                 updateCountdown(detailCountdownElement, event.eventDateTime);
             }
             
@@ -1656,8 +2324,27 @@ window.openEventDetail = async function(slug) {
 
     } catch (error) {
         console.error("Kesalahan Saat Memuat Detail Event:", error);
-        detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail event. Periksa koneksi API Sanity Anda.</p>';
+        if (detailRender) {
+            detailRender.innerHTML = '<p class="section-lead">Gagal memuat detail event. Periksa koneksi API Sanity Anda.</p>';
+        }
     }
+}
+
+window.closeEventDetail = function() {
+    const eventMainContent = document.getElementById('event-main-content');
+    const eventDetailContent = document.getElementById('event-detail-content');
+    const searchFilterContainer = document.querySelector('.event-search-filter-container');
+    const resultsCount = document.getElementById('event-results-count');
+    const backButton = document.getElementById('back-event-button');
+    
+    if (eventMainContent) eventMainContent.style.display = 'block';
+    if (searchFilterContainer) searchFilterContainer.style.display = 'flex';
+    if (resultsCount) resultsCount.style.display = 'block';
+    
+    if (eventDetailContent) eventDetailContent.style.display = 'none';
+    if (backButton) backButton.style.display = 'none';
+    
+    window.scrollTo(0, 0); 
 }
 
 window.closeEventDetail = function() {
@@ -1790,7 +2477,8 @@ function renderMemberCard(member) {
         imageUrl = `${buildImageUrl(member.photoUrl)}?w=120&h=120&fit=crop&auto=format&q=75`;
     }
     
-    const displayPosition = member.position.replace(' Divisi', '');
+    // Display position sesuai dengan yang ada di schema
+    const displayPosition = member.position;
 
     return `
         <div class="member-card">
@@ -1834,11 +2522,15 @@ async function fetchOrgStructure() {
             const treasuryHtml = treasuryMembers.map(renderMemberCard).join('');
 
             // Membangun HTML Inti OSIM dengan 3 grup terpisah
+            const leadershipClass = leadershipMembers.length === 1 ? 'core-leadership-grid single-item' : 'core-leadership-grid';
+            const secretariatClass = secretariatMembers.length === 1 ? 'core-secretariat-grid single-item' : 'core-secretariat-grid';
+            const treasuryClass = treasuryMembers.length === 1 ? 'core-treasury-grid single-item' : 'core-treasury-grid';
+            
             coreContainer.innerHTML = `
                 ${leadershipMembers.length > 0 ? `
                     <div class="struktur-group">
-                        <h4 class="struktur-sub-title">INTI OSIM</h4>
-                        <div class="member-grid core-leadership-grid">
+                        <h4 class="struktur-sub-title">Ketua</h4>
+                        <div class="member-grid ${leadershipClass}">
                             ${leadershipHtml}
                         </div>
                     </div>
@@ -1846,7 +2538,7 @@ async function fetchOrgStructure() {
                 ${secretariatMembers.length > 0 ? `
                     <div class="struktur-group">
                         <h4 class="struktur-sub-title">Sekretariat</h4>
-                        <div class="member-grid core-secretariat-grid">
+                        <div class="member-grid ${secretariatClass}">
                             ${secretariatHtml}
                         </div>
                     </div>
@@ -1854,7 +2546,7 @@ async function fetchOrgStructure() {
                 ${treasuryMembers.length > 0 ? `
                     <div class="struktur-group">
                         <h4 class="struktur-sub-title">Bendahara</h4>
-                        <div class="member-grid core-treasury-grid">
+                        <div class="member-grid ${treasuryClass}">
                             ${treasuryHtml}
                         </div>
                     </div>
@@ -1874,11 +2566,13 @@ async function fetchOrgStructure() {
             divisionNames.forEach(division => {
                 const members = groupedDivisions[division];
                 const membersGrid = members.map(renderMemberCard).join('');
+                // Tambahkan class single-item jika hanya ada 1 member
+                const gridClass = members.length === 1 ? 'member-grid single-item' : 'member-grid';
                 
                 divisionHtml += `
                     <div class="division-group">
                         <h3>${division}</h3>
-                        <div class="member-grid">
+                        <div class="${gridClass}">
                             ${membersGrid}
                         </div>
                     </div>
@@ -1965,12 +2659,15 @@ async function fetchSchoolPolicy() {
 }
 
 
-// --- FUNGSI TOGGLE MENU (LOGIKA BARU YANG LEBIH BAIK) ---
+// --- FUNGSI TOGGLE MENU (VERSI SEDERHANA DAN LANGSUNG) ---
 function setupMenuToggle() {
     const toggleButton = document.querySelector('.menu-toggle');
     const navLinks = document.getElementById('nav-links');
     
-    if (!toggleButton || !navLinks) return;
+    if (!toggleButton || !navLinks) {
+        console.warn('Menu toggle button or nav links not found');
+        return;
+    }
     
     const allDropdownContents = navLinks.querySelectorAll('.dropdown-content');
 
@@ -1981,17 +2678,97 @@ function setupMenuToggle() {
         });
     }
 
-    // 1. Event untuk Tombol Hamburger
-    toggleButton.addEventListener('click', () => {
-        // Cek apakah menu AKAN dibuka atau ditutup
-        const isOpening = !navLinks.classList.contains('active');
+    // Handler untuk toggle menu - SEDERHANA DAN LANGSUNG
+    const handleToggle = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Toggle class active pada nav-links
+        const wasActive = navLinks.classList.contains('active');
         navLinks.classList.toggle('active');
-
-        // Jika menu DITUTUP (isOpening = false), tutup juga semua dropdown
-        if (!isOpening) {
+        const isNowActive = navLinks.classList.contains('active');
+        
+        console.log('Menu toggle clicked', {
+            wasActive: wasActive,
+            isNowActive: isNowActive,
+            navLinks: navLinks,
+            computedDisplay: window.getComputedStyle(navLinks).display
+        });
+        
+        // Jika menu ditutup, tutup juga semua dropdown
+        if (!isNowActive) {
             closeAllDropdowns();
         }
-    });
+    };
+    
+    // Hapus semua event listener lama dengan clone (untuk menghindari duplikasi)
+    const newButton = toggleButton.cloneNode(true);
+    toggleButton.parentNode.replaceChild(newButton, toggleButton);
+    
+    // Re-query button setelah clone
+    const button = document.querySelector('.menu-toggle');
+    if (!button) {
+        console.error('Menu toggle button not found after clone');
+        return;
+    }
+    
+    // Flag untuk mencegah double toggle - gunakan closure
+    let isToggling = false;
+    
+    // Handler dengan debounce untuk mencegah double execution
+    const debouncedHandleToggle = (e) => {
+        if (isToggling) {
+            console.log('Toggle blocked - already toggling');
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+        
+        isToggling = true;
+        handleToggle(e);
+        
+        // Reset flag setelah 300ms
+        setTimeout(() => {
+            isToggling = false;
+        }, 300);
+        
+        return false;
+    };
+    
+    // Hapus semua event listener lama dengan clone
+    const newButton2 = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton2, button);
+    const finalButton = document.querySelector('.menu-toggle');
+    
+    if (!finalButton) {
+        console.error('Menu toggle button not found after second clone');
+        return;
+    }
+    
+    // Hanya attach SATU event listener per event type - JANGAN gunakan onclick dan addEventListener bersamaan
+    finalButton.addEventListener('click', debouncedHandleToggle, false);
+    finalButton.addEventListener('touchend', debouncedHandleToggle, false);
+    
+    // Prevent double-tap zoom
+    finalButton.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+        }
+    }, false);
+    
+    // Pastikan style untuk mobile
+    finalButton.style.cursor = 'pointer';
+    finalButton.style.pointerEvents = 'auto';
+    finalButton.style.touchAction = 'manipulation';
+    finalButton.style.zIndex = '99999';
+    finalButton.style.position = 'relative';
+    
+    // Mark sebagai sudah di-initialize untuk mencegah inline script override
+    finalButton.setAttribute('data-menu-toggle-initialized', 'true');
+    
+    console.log('Menu toggle setup completed (single handler, no duplicates)', finalButton);
 
     // 2. Event untuk semua link <a> di dalam <nav>
     navLinks.querySelectorAll('a').forEach(link => {
@@ -2031,21 +2808,196 @@ function setupMenuToggle() {
     });
 }
 
+// --- FUNGSI DROPDOWN HOVER UNTUK DESKTOP (MENCEGAH GLITCH) ---
+let desktopDropdownInitialized = false;
 
-// --- FUNGSI UTAMA 8: ALUMNI CONNECT LOGIC ---
-
-function renderAlumniCards(alumniList) {
-    const container = document.getElementById('directory-container');
-    if (!container) return;
+function setupDesktopDropdownHover() {
+    const navLinks = document.getElementById('nav-links');
+    if (!navLinks) return;
     
-    if (alumniList.length === 0) {
-        container.innerHTML = '<p class="section-lead">Tidak ada alumni terdaftar saat ini.</p>';
+    // Hanya jalankan di desktop (lebar > 768px)
+    if (window.innerWidth <= 768) {
+        // Di mobile, biarkan CSS dan mobile logic menangani
+        desktopDropdownInitialized = false;
         return;
     }
     
-    const cardsHtml = alumniList.map(alumni => {
-        // TAMPILAN KARTU DIPERBARUI UNTUK FOKUS NETWORKING
-        // KOREKSI FOTO PROFIL: Menggunakan alumni.profilePhoto.asset._ref jika perlu
+    // Jika sudah di-initialize, skip
+    if (desktopDropdownInitialized) return;
+    
+    const allDropdowns = navLinks.querySelectorAll('.dropdown');
+    const allDropdownContents = navLinks.querySelectorAll('.dropdown-content');
+    
+    // Fungsi untuk menutup semua dropdown
+    const closeAllDropdowns = () => {
+        allDropdownContents.forEach(content => {
+            // Gunakan style untuk override CSS hover
+            content.style.display = 'none';
+        });
+    };
+    
+    // Tambahkan event listener untuk setiap dropdown
+    allDropdowns.forEach(dropdown => {
+        const dropbtn = dropdown.querySelector('.dropbtn');
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+        
+        if (!dropbtn || !dropdownContent) return;
+        
+        // Cek apakah sudah ada event listener (dengan data attribute)
+        if (dropdown.dataset.hoverInitialized === 'true') return;
+        dropdown.dataset.hoverInitialized = 'true';
+        
+        let hoverTimeout;
+        
+        // Mouse enter - buka dropdown ini dan tutup yang lain
+        dropdown.addEventListener('mouseenter', (e) => {
+            clearTimeout(hoverTimeout);
+            closeAllDropdowns();
+            // Gunakan setTimeout kecil untuk memastikan smooth transition
+            setTimeout(() => {
+                dropdownContent.style.display = 'flex';
+                dropdownContent.style.flexDirection = 'column';
+            }, 10);
+        });
+        
+        // Mouse leave - tutup dropdown ini dengan delay kecil untuk smooth transition
+        dropdown.addEventListener('mouseleave', (e) => {
+            hoverTimeout = setTimeout(() => {
+                dropdownContent.style.display = 'none';
+            }, 150); // Delay untuk mencegah flickering saat mouse pindah ke dropdown content
+        });
+        
+        // Pastikan dropdown tetap terbuka saat mouse di dalam dropdown content
+        dropdownContent.addEventListener('mouseenter', () => {
+            clearTimeout(hoverTimeout);
+            dropdownContent.style.display = 'flex';
+            dropdownContent.style.flexDirection = 'column';
+        });
+        
+        dropdownContent.addEventListener('mouseleave', () => {
+            dropdownContent.style.display = 'none';
+        });
+    });
+    
+    // Tutup semua dropdown saat mouse meninggalkan navbar
+    const navbar = document.querySelector('.navbar nav');
+    if (navbar) {
+        // Hapus listener lama jika ada
+        const oldHandler = navbar._dropdownLeaveHandler;
+        if (oldHandler) {
+            navbar.removeEventListener('mouseleave', oldHandler);
+        }
+        
+        const leaveHandler = () => {
+            closeAllDropdowns();
+        };
+        navbar._dropdownLeaveHandler = leaveHandler;
+        navbar.addEventListener('mouseleave', leaveHandler);
+    }
+    
+    desktopDropdownInitialized = true;
+}
+
+// Panggil fungsi saat DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    setupDesktopDropdownHover();
+    setupMenuToggle();
+});
+
+// Juga panggil saat window load untuk memastikan
+window.addEventListener('load', () => {
+    setupMenuToggle();
+});
+
+// Setup ulang saat window resize
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        desktopDropdownInitialized = false; // Reset untuk re-initialize
+        setupDesktopDropdownHover();
+    }, 100);
+});
+
+// --- FUNGSI UTAMA 8: ALUMNI CONNECT LOGIC ---
+
+// Filter and search alumni
+function filterAlumniList(alumniList) {
+    let filtered = [...alumniList];
+    
+    // Search filter
+    if (currentAlumniSearchQuery) {
+        const searchLower = currentAlumniSearchQuery.toLowerCase();
+        filtered = filtered.filter(alumni => 
+            (alumni.name && alumni.name.toLowerCase().includes(searchLower)) ||
+            (alumni.major && alumni.major.toLowerCase().includes(searchLower)) ||
+            (alumni.currentLocation && alumni.currentLocation.toLowerCase().includes(searchLower)) ||
+            (alumni.currentJob && alumni.currentJob.toLowerCase().includes(searchLower)) ||
+            (alumni.currentEducationInstitution && alumni.currentEducationInstitution.toLowerCase().includes(searchLower))
+        );
+    }
+    
+    // Year filter
+    if (currentAlumniYearFilter !== 'all') {
+        filtered = filtered.filter(alumni => 
+            alumni.graduationYear && alumni.graduationYear.toString() === currentAlumniYearFilter
+        );
+    }
+    
+    // Location filter
+    if (currentAlumniLocationFilter !== 'all') {
+        filtered = filtered.filter(alumni => 
+            alumni.currentLocation && alumni.currentLocation.toLowerCase().includes(currentAlumniLocationFilter.toLowerCase())
+        );
+    }
+    
+    // Major filter
+    if (currentAlumniMajorFilter !== 'all') {
+        filtered = filtered.filter(alumni => 
+            alumni.major && alumni.major.toLowerCase().includes(currentAlumniMajorFilter.toLowerCase())
+        );
+    }
+    
+    return filtered;
+}
+
+// Get paginated alumni
+function getPaginatedAlumni(filteredList) {
+    const startIndex = (currentAlumniPage - 1) * alumniItemsPerPage;
+    const endIndex = startIndex + alumniItemsPerPage;
+    return filteredList.slice(startIndex, endIndex);
+}
+
+// Render alumni cards with pagination
+function renderAlumniCards(alumniList) {
+    const container = document.getElementById('directory-container');
+    const paginationContainer = document.getElementById('alumni-pagination');
+    if (!container) return;
+    
+    // Filter alumni
+    const filteredList = filterAlumniList(alumniList);
+    
+    // Update results count
+    updateAlumniResultsCount(filteredList.length, alumniList.length);
+    
+    // Get paginated data
+    const paginatedList = getPaginatedAlumni(filteredList);
+    const totalPages = Math.ceil(filteredList.length / alumniItemsPerPage);
+    
+    if (filteredList.length === 0) {
+        container.innerHTML = '<p class="section-lead">Tidak ada alumni yang sesuai dengan filter Anda.</p>';
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    if (paginatedList.length === 0) {
+        container.innerHTML = '<p class="section-lead">Halaman tidak ditemukan.</p>';
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    // Render cards
+    const cardsHtml = paginatedList.map(alumni => {
         const imageUrl = alumni.photoRef ? `${buildImageUrl(alumni.photoRef)}?w=100&h=100&fit=crop` : 'https://via.placeholder.com/100/008940/ffffff?text=AL';
         
         return `
@@ -2065,66 +3017,259 @@ function renderAlumniCards(alumniList) {
     }).join('');
     
     container.innerHTML = cardsHtml;
+    
+    // Render pagination
+    renderAlumniPagination(totalPages, filteredList.length);
+    
+    // Update map with filtered data
+    if (alumniDataCache.length > 0) {
+        renderAlumniMap(filteredList);
+    }
 }
 
-// FUNGSI AKTUAL UNTUK PETA LEAFLET
+// Render pagination controls
+function renderAlumniPagination(totalPages, totalItems) {
+    const paginationContainer = document.getElementById('alumni-pagination');
+    if (!paginationContainer) return;
+    
+    if (totalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHtml = '<div class="alumni-pagination">';
+    
+    // Previous button
+    if (currentAlumniPage > 1) {
+        paginationHtml += `<button class="pagination-btn" onclick="goToAlumniPage(${currentAlumniPage - 1})">← Sebelumnya</button>`;
+    } else {
+        paginationHtml += `<button class="pagination-btn" disabled>← Sebelumnya</button>`;
+    }
+    
+    // Page numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentAlumniPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+        paginationHtml += `<button class="pagination-btn" onclick="goToAlumniPage(1)">1</button>`;
+        if (startPage > 2) {
+            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentAlumniPage) {
+            paginationHtml += `<button class="pagination-btn pagination-active">${i}</button>`;
+        } else {
+            paginationHtml += `<button class="pagination-btn" onclick="goToAlumniPage(${i})">${i}</button>`;
+        }
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+        }
+        paginationHtml += `<button class="pagination-btn" onclick="goToAlumniPage(${totalPages})">${totalPages}</button>`;
+    }
+    
+    // Next button
+    if (currentAlumniPage < totalPages) {
+        paginationHtml += `<button class="pagination-btn" onclick="goToAlumniPage(${currentAlumniPage + 1})">Selanjutnya →</button>`;
+    } else {
+        paginationHtml += `<button class="pagination-btn" disabled>Selanjutnya →</button>`;
+    }
+    
+    paginationHtml += '</div>';
+    paginationContainer.innerHTML = paginationHtml;
+}
+
+// Go to specific page
+window.goToAlumniPage = function(page) {
+    currentAlumniPage = page;
+    renderAlumniCards(alumniDataCache);
+    // Scroll to top of directory section
+    const directorySection = document.getElementById('alumni-directory');
+    if (directorySection) {
+        directorySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Update results count
+function updateAlumniResultsCount(filteredCount, totalCount) {
+    const resultsCountEl = document.getElementById('alumni-results-count');
+    if (!resultsCountEl) return;
+    
+    if (filteredCount === totalCount) {
+        resultsCountEl.innerHTML = `<p class="alumni-count-text">Menampilkan <strong>${filteredCount}</strong> dari <strong>${totalCount}</strong> alumni</p>`;
+    } else {
+        resultsCountEl.innerHTML = `<p class="alumni-count-text">Menampilkan <strong>${filteredCount}</strong> dari <strong>${totalCount}</strong> alumni (difilter)</p>`;
+    }
+}
+
+// Populate filter dropdowns
+function populateAlumniFilters(alumniList) {
+    // Get unique years
+    const years = [...new Set(alumniList.map(a => a.graduationYear).filter(y => y))].sort((a, b) => b - a);
+    const yearFilter = document.getElementById('alumni-year-filter');
+    if (yearFilter) {
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year.toString();
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
+    }
+    
+    // Get unique locations
+    const locations = [...new Set(alumniList.map(a => a.currentLocation).filter(l => l))].sort();
+    const locationFilter = document.getElementById('alumni-location-filter');
+    if (locationFilter) {
+        locations.forEach(location => {
+            const option = document.createElement('option');
+            option.value = location;
+            option.textContent = location;
+            locationFilter.appendChild(option);
+        });
+    }
+    
+    // Get unique majors
+    const majors = [...new Set(alumniList.map(a => a.major).filter(m => m))].sort();
+    const majorFilter = document.getElementById('alumni-major-filter');
+    if (majorFilter) {
+        majors.forEach(major => {
+            const option = document.createElement('option');
+            option.value = major;
+            option.textContent = major;
+            majorFilter.appendChild(option);
+        });
+    }
+}
+
+// Search alumni
+window.searchAlumni = function() {
+    const searchInput = document.getElementById('alumni-search-input');
+    if (!searchInput) return;
+    
+    const query = sanitizeInput(searchInput.value);
+    currentAlumniSearchQuery = query;
+    currentAlumniPage = 1; // Reset to first page
+    renderAlumniCards(alumniDataCache);
+}
+
+// Filter by year
+window.filterAlumniByYear = function() {
+    const yearFilter = document.getElementById('alumni-year-filter');
+    if (!yearFilter) return;
+    
+    currentAlumniYearFilter = yearFilter.value;
+    currentAlumniPage = 1; // Reset to first page
+    renderAlumniCards(alumniDataCache);
+}
+
+// Filter by location
+window.filterAlumniByLocation = function() {
+    const locationFilter = document.getElementById('alumni-location-filter');
+    if (!locationFilter) return;
+    
+    currentAlumniLocationFilter = locationFilter.value;
+    currentAlumniPage = 1; // Reset to first page
+    renderAlumniCards(alumniDataCache);
+}
+
+// Filter by major
+window.filterAlumniByMajor = function() {
+    const majorFilter = document.getElementById('alumni-major-filter');
+    if (!majorFilter) return;
+    
+    currentAlumniMajorFilter = majorFilter.value;
+    currentAlumniPage = 1; // Reset to first page
+    renderAlumniCards(alumniDataCache);
+}
+
+// FUNGSI AKTUAL UNTUK PETA LEAFLET DENGAN CLUSTERING
 function renderAlumniMap(alumniList) {
     const mapEl = document.getElementById('map-container');
     if (!mapEl) return;
     
     const geoPoints = alumniList.filter(a => a.coordinates && a.coordinates.lat && a.coordinates.lng);
-    let markerCount = 0;
+    let markerCount = geoPoints.length;
     
     // Perbaikan: Cek L sekali lagi sebelum inisialisasi
     if (typeof L === 'undefined') {
         return; 
     }
 
-    let alumniMap = null;
-    // Hapus map lama jika sudah ada container Leaflet
+    // Hapus map lama jika sudah ada
+    if (alumniMapInstance) {
+        alumniMapInstance.remove();
+        alumniMapInstance = null;
+    }
+    
     if (mapEl.querySelector('.leaflet-container')) {
         mapEl.innerHTML = '';
     }
 
     // 1. INISIALISASI PETA
-    alumniMap = L.map('map-container').setView([-2.5, 118.0], 5); 
+    alumniMapInstance = L.map('map-container').setView([-2.5, 118.0], 5); 
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM Contributors</a>',
         maxZoom: 18,
-    }).addTo(alumniMap);
+    }).addTo(alumniMapInstance);
     
-    // 2. TAMBAHKAN MARKER
+    // 2. BUAT MARKER CLUSTER GROUP
+    const markers = L.markerClusterGroup({
+        chunkedLoading: true,
+        chunkInterval: 200,
+        chunkDelay: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        maxClusterRadius: 50
+    });
+    
+    // 3. TAMBAHKAN MARKER KE CLUSTER
     geoPoints.forEach(alumni => {
         const lat = alumni.coordinates.lat;
         const lng = alumni.coordinates.lng;
         
         const popupContent = `
-            <b>${alumni.name}</b><br>
-            Lulus: ${alumni.graduationYear}<br>
-            Institusi: ${alumni.currentEducationInstitution || 'N/A'}<br>
-            Jurusan: ${alumni.major || 'N/A'}
+            <div style="min-width: 200px;">
+                <b>${alumni.name}</b><br>
+                Lulus: ${alumni.graduationYear || 'N/A'}<br>
+                ${alumni.currentEducationInstitution ? `Institusi: ${alumni.currentEducationInstitution}<br>` : ''}
+                ${alumni.major ? `Jurusan: ${alumni.major}<br>` : ''}
+                ${alumni.currentLocation ? `Lokasi: ${alumni.currentLocation}` : ''}
+            </div>
         `;
 
-        L.marker([lat, lng])
-            .addTo(alumniMap)
+        const marker = L.marker([lat, lng])
             .bindPopup(popupContent);
-            
-        markerCount++;
+        
+        markers.addLayer(marker);
     });
     
-    // 3. PETA PERLU DIBERITAHU UNTUK MENGHITUNG ULANG UKURANNYA
-    // Ini membantu mengatasi 'white box' jika container baru saja muncul
+    // 4. TAMBAHKAN CLUSTER GROUP KE PETA
+    alumniMapInstance.addLayer(markers);
+    
+    // 5. PETA PERLU DIBERITAHU UNTUK MENGHITUNG ULANG UKURANNYA
     setTimeout(function () {
-        alumniMap.invalidateSize(); 
+        if (alumniMapInstance) {
+            alumniMapInstance.invalidateSize();
+        }
     }, 100); 
 
-    // 4. Status marker di bawah peta
+    // 6. Status marker di bawah peta
     const statusDiv = document.createElement('div');
     statusDiv.className = 'section-lead';
     statusDiv.style.padding = '10px 0';
     statusDiv.style.textAlign = 'center';
-    statusDiv.innerHTML = `Alumni yang memiliki data Geolocation: **${markerCount} orang.**`;
+    statusDiv.innerHTML = `Alumni yang memiliki data Geolocation: <strong>${markerCount} orang</strong>. Gunakan zoom untuk melihat detail.`;
     
     if (!document.getElementById('map-status-info')) {
         const mapSection = document.getElementById('alumni-map');
@@ -2135,6 +3280,9 @@ function renderAlumniMap(alumniList) {
     } else {
         document.getElementById('map-status-info').innerHTML = statusDiv.innerHTML;
     }
+    
+    // Store markers for cleanup
+    alumniMarkers = markers;
 }
 
 
@@ -2192,6 +3340,10 @@ async function fetchAlumniDirectory() {
         const alumniList = result.result;
         
         alumniDataCache = alumniList; // Cache data
+        
+        // Populate filter options
+        populateAlumniFilters(alumniList);
+        
         renderAlumniCards(alumniList);
         
         // Panggil inisialisasi yang robust (akan otomatis retry jika L belum siap)
@@ -2289,44 +3441,144 @@ async function fetchEkskulList() {
 
     try {
         const response = await fetch(`${apiUrl}?query=${ekskulListQuery}`);
-        if (!response.ok) throw new Error(`Gagal fetch ekskul list.`);
+        if (!response.ok) {
+            throw new Error(`Gagal fetch ekskul list. Status: ${response.status}`);
+        }
         
         const result = await response.json();
-        const ekskulList = result.result;
+        ekskulDataCache = result.result || [];
 
-        container.innerHTML = '';
+        console.log('Ekskul data fetched:', ekskulDataCache.length, 'items');
+        console.log('Ekskul data:', ekskulDataCache);
 
-        if (ekskulList.length === 0) {
-            container.innerHTML = '<p class="section-lead">Belum ada ekstrakurikuler yang didaftarkan.</p>';
+        if (ekskulDataCache.length === 0) {
+            container.innerHTML = '<p class="section-lead">Belum ada ekstrakurikuler yang didaftarkan. Pastikan data sudah di-publish di Sanity.</p>';
+            updateResultsCount(0);
             return;
         }
 
-        ekskulList.forEach(ekskul => {
-            let iconUrl = 'https://via.placeholder.com/60?text=LOGO'; 
-            
-            if (ekskul.logoRef) {
-                iconUrl = `${buildImageUrl(ekskul.logoRef)}?w=60&h=60&fit=crop&auto=format`;
-            }
-            
-            const cardHtml = `
-                <div class="koorbid-card" onclick="openEkskulDetail('${ekskul.slug.current}')">
-                    <div class="koorbid-icon">
-                        <img src="${iconUrl}" alt="${ekskul.title} Logo">
-                    </div>
-                    <h3>${ekskul.title}</h3>
-                    <p class.click-indicator" style="font-size: 0.85rem; font-weight: 600; color: #008940; margin-top: 0.5rem;">[Lihat Detail]</p>
-                </div>
-            `;
-            container.innerHTML += cardHtml;
-        });
+        // Filter out items without slug (required field)
+        ekskulDataCache = ekskulDataCache.filter(ekskul => ekskul.slug && ekskul.slug.current);
+
+        if (ekskulDataCache.length === 0) {
+            container.innerHTML = '<p class="section-lead">Tidak ada ekstrakurikuler dengan slug yang valid. Pastikan semua ekskul sudah memiliki slug.</p>';
+            updateResultsCount(0);
+            return;
+        }
+
+        applyFiltersAndSearch();
 
     } catch (error) {
         console.error("Kesalahan Fetch Ekskul List:", error);
-        container.innerHTML = '<p class="section-lead">Gagal memuat daftar ekstrakurikuler.</p>';
+        container.innerHTML = `<p class="section-lead">Gagal memuat daftar ekstrakurikuler. Error: ${error.message}</p>`;
+        updateResultsCount(0);
+    }
+}
+
+function applyFiltersAndSearch() {
+    let filtered = [...ekskulDataCache];
+
+    // Apply category filter
+    if (currentCategoryFilter !== 'all') {
+        filtered = filtered.filter(ekskul => ekskul.category === currentCategoryFilter);
+    }
+
+    // Apply search query
+    if (currentSearchQuery.trim() !== '') {
+        const query = currentSearchQuery.toLowerCase().trim();
+        filtered = filtered.filter(ekskul => {
+            const title = (ekskul.title || '').toLowerCase();
+            const desc = (ekskul.shortDescription || '').toLowerCase();
+            return title.includes(query) || desc.includes(query);
+        });
+    }
+
+    updateResultsCount(filtered.length);
+    renderEkskulList(filtered);
+}
+
+function updateResultsCount(count) {
+    const countEl = document.getElementById('ekskul-results-count');
+    if (countEl) {
+        if (count === 0) {
+            countEl.innerHTML = '<p class="section-lead">Tidak ada hasil ditemukan.</p>';
+        } else {
+            countEl.innerHTML = `<p class="ekskul-count-text">Menampilkan <strong>${count}</strong> ekstrakurikuler</p>`;
+        }
+    }
+}
+
+function renderEkskulList(ekskulList) {
+    const container = document.getElementById('ekskul-list-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    ekskulList.forEach(ekskul => {
+        let iconUrl = 'https://via.placeholder.com/100?text=LOGO'; 
+        
+        if (ekskul.logoRef) {
+            iconUrl = `${buildImageUrl(ekskul.logoRef)}?w=100&h=100&fit=crop&auto=format`;
+        }
+
+        const categoryBadge = ekskul.category ? `<span class="ekskul-category-badge">${getCategoryLabel(ekskul.category)}</span>` : '';
+        const description = ekskul.shortDescription ? `<p class="ekskul-description">${ekskul.shortDescription}</p>` : '';
+        
+        const cardHtml = `
+            <div class="ekskul-card" data-category="${ekskul.category || 'lainnya'}" onclick="openEkskulDetail('${ekskul.slug.current}')">
+                <div class="ekskul-card-header">
+                    <div class="ekskul-logo-wrapper">
+                        <img src="${iconUrl}" alt="${ekskul.title} Logo" class="ekskul-logo">
+                    </div>
+                    ${categoryBadge}
+                </div>
+                <div class="ekskul-card-body">
+                    <h3 class="ekskul-title">${ekskul.title}</h3>
+                    ${description}
+                </div>
+                <div class="ekskul-card-footer">
+                    <span class="ekskul-link-text">Lihat Detail →</span>
+                </div>
+            </div>
+        `;
+        container.innerHTML += cardHtml;
+    });
+}
+
+function getCategoryLabel(category) {
+    const labels = {
+        'olahraga': 'Olahraga',
+        'seni': 'Seni & Budaya',
+        'keagamaan': 'Keagamaan',
+        'sains': 'Sains & Teknologi',
+        'bahasa': 'Bahasa',
+        'kepemimpinan': 'Kepemimpinan',
+        'lainnya': 'Lainnya'
+    };
+    return labels[category] || category;
+}
+
+window.filterEkskulByCategory = function() {
+    const selectEl = document.getElementById('ekskul-category-filter');
+    if (selectEl) {
+        currentCategoryFilter = selectEl.value;
+        applyFiltersAndSearch();
+    }
+}
+
+window.searchEkskul = function() {
+    const searchInput = document.getElementById('ekskul-search-input');
+    if (searchInput) {
+        // Sanitize input before using
+        currentSearchQuery = sanitizeInput(searchInput.value);
+        applyFiltersAndSearch();
     }
 }
 
 window.openEkskulDetail = async function(slug) {
+    // Sanitize slug input to prevent injection
+    const sanitizedSlug = sanitizeInput(slug);
+    
     document.getElementById('ekskul-main-content').style.display = 'none';
     
     const detailContent = document.getElementById('ekskul-detail-content');
@@ -2336,7 +3588,7 @@ window.openEkskulDetail = async function(slug) {
     window.scrollTo(0, 0); 
 
     try {
-        const response = await fetch(`${apiUrl}?query=${ekskulDetailQuery(slug)}`);
+        const response = await fetch(`${apiUrl}?query=${ekskulDetailQuery(sanitizedSlug)}`);
         if (!response.ok) throw new Error(`Gagal fetch detail ekskul.`);
         
         const result = await response.json();
@@ -2355,46 +3607,97 @@ window.openEkskulDetail = async function(slug) {
                 logoUrl = `${buildImageUrl(ekskul.logoRef)}?w=150&h=150&fit=scale&auto=format`;
             }
 
+            const categoryLabel = ekskul.category ? getCategoryLabel(ekskul.category) : '';
+            const shortDesc = ekskul.shortDescription ? `<p class="ekskul-detail-description">${ekskul.shortDescription}</p>` : '';
+            
+            // Gallery images
+            let galleryHtml = '';
+            if (ekskul.gallery && ekskul.gallery.length > 0) {
+                galleryHtml = '<div class="ekskul-gallery"><h3>Galeri Kegiatan</h3><div class="ekskul-gallery-grid">';
+                ekskul.gallery.forEach(img => {
+                    if (img.imageRef) {
+                        const imgUrl = `${buildImageUrl(img.imageRef)}?w=400&h=300&fit=crop&auto=format`;
+                        galleryHtml += `<img src="${imgUrl}" alt="Galeri ${ekskul.title}" class="ekskul-gallery-img">`;
+                    }
+                });
+                galleryHtml += '</div></div>';
+            }
+
             detailRender.innerHTML = `
-                <div class="koorbid-detail-header">
-                    <img src="${logoUrl}" alt="${ekskul.title}" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 1rem;">
-                    <h1 class="detail-title">${ekskul.title}</h1>
-                    <p style="font-size: 1.1rem; margin-top: -1rem; margin-bottom: 2rem;">Pembimbing: <strong>${ekskul.pembimbing || 'N/A'}</strong></p>
+                <div class="ekskul-detail-header">
+                    <div class="ekskul-detail-logo">
+                        <img src="${logoUrl}" alt="${ekskul.title}">
+                    </div>
+                    <div class="ekskul-detail-info">
+                        <h1 class="detail-title">${ekskul.title}</h1>
+                        ${categoryLabel ? `<span class="ekskul-category-badge-large">${categoryLabel}</span>` : ''}
+                        ${shortDesc}
+                        ${ekskul.pembimbing ? `<p class="ekskul-pembimbing"><strong>Pembimbing:</strong> ${ekskul.pembimbing}</p>` : ''}
+                    </div>
                 </div>
                 
                 ${ekskul.linkFormulir ? `
-                    <div class="detail-section" style="text-align: center;">
-                        <a href="${ekskul.linkFormulir}" target="_blank" class="cta-button" style="background-color: #008940; color: white;">
-                            🔗 Gabung Sekarang (Klik di Sini)
+                    <div class="ekskul-cta-section">
+                        <a href="${ekskul.linkFormulir}" target="_blank" class="cta-button ekskul-join-btn">
+                            <span>🔗 Gabung Sekarang</span>
+                            <small>Klik untuk mengisi formulir pendaftaran</small>
                         </a>
                     </div>
                 ` : ''}
 
-                <div class="detail-section">
-                    <h3>Jadwal & Lokasi</h3>
-                    <p><strong>Jadwal Latihan:</strong> ${ekskul.jadwalLatihan || 'Belum diatur'}</p>
-                    <p><strong>Lokasi Stan Parade:</strong> ${ekskul.lokasiParade || 'Belum diatur'}</p>
+                <div class="detail-section ekskul-info-card">
+                    <h3>📅 Jadwal & Lokasi</h3>
+                    <div class="ekskul-info-grid">
+                        ${ekskul.jadwalLatihan ? `
+                            <div class="info-item">
+                                <strong>Jadwal Latihan:</strong>
+                                <p>${ekskul.jadwalLatihan}</p>
+                            </div>
+                        ` : ''}
+                        ${ekskul.lokasiLatihan ? `
+                            <div class="info-item">
+                                <strong>Lokasi Latihan:</strong>
+                                <p>${ekskul.lokasiLatihan}</p>
+                            </div>
+                        ` : ''}
+                        ${ekskul.lokasiParade ? `
+                            <div class="info-item">
+                                <strong>Lokasi Stan Parade:</strong>
+                                <p>${ekskul.lokasiParade}</p>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
                 
-                <div class="detail-section">
-                    <h3>Tujuan Ekstrakurikuler</h3>
-                    <div class="functions-list">${tujuanHtml || '<p>Tujuan belum diisi.</p>'}</div>
-                </div>
+                ${tujuanHtml ? `
+                    <div class="detail-section">
+                        <h3>🎯 Tujuan Ekstrakurikuler</h3>
+                        <div class="functions-list">${tujuanHtml}</div>
+                    </div>
+                ` : ''}
                 
-                <div class="detail-section">
-                    <h3>Struktur Organisasi</h3>
-                    <div class="functions-list">${strukturHtml || '<p>Struktur belum diisi.</p>'}</div>
-                </div>
+                ${strukturHtml ? `
+                    <div class="detail-section">
+                        <h3>👥 Struktur Organisasi</h3>
+                        <div class="functions-list">${strukturHtml}</div>
+                    </div>
+                ` : ''}
 
-                <div class="detail-section">
-                    <h3>Syarat Bergabung</h3>
-                    <div class="functions-list">${requirementHtml || '<p>Syarat belum diisi.</p>'}</div>
-                </div>
+                ${requirementHtml ? `
+                    <div class="detail-section">
+                        <h3>📋 Syarat Bergabung</h3>
+                        <div class="functions-list">${requirementHtml}</div>
+                    </div>
+                ` : ''}
                 
-                <div class="detail-section">
-                    <h3>Prestasi</h3>
-                    <div class="functions-list">${prestasiHtml || '<p>Belum ada prestasi yang dicatat.</p>'}</div>
-                </div>
+                ${prestasiHtml ? `
+                    <div class="detail-section">
+                        <h3>🏆 Prestasi</h3>
+                        <div class="functions-list">${prestasiHtml}</div>
+                    </div>
+                ` : ''}
+                
+                ${galleryHtml}
             `;
             
         } else {
@@ -2668,6 +3971,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. LANJUTKAN INISIALISASI HANYA JIKA MAINTENANCE NON-AKTIF
     setupMenuToggle(); // <-- FUNGSI YANG DIPERBAIKI DIPANGGIL DI SINI
     
+    // Navbar scroll effect
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    }
+    
     displaySystemStatus();
     updateLiveTime(); 
 
@@ -2721,14 +4036,10 @@ if (document.getElementById('prestasi-list-container')) {
         fetchOrgStructure();
     }
     
-// Inisialisasi Halaman Kompetisi (BARU)
+    // Inisialisasi Halaman Kompetisi (BARU)
     if (document.getElementById('kompetisi-list-container')) {
         fetchKompetisiList();
     }
-});
-
-   
-
 
     // Inisialisasi Halaman Alumni Connect
     if (document.getElementById('alumni-main-content')) {
@@ -2746,12 +4057,182 @@ if (document.getElementById('prestasi-list-container')) {
         fetchEkskulList();
     }
 
-    
     // Inisialisasi Halaman Beasiswa (BARU)
     if (document.getElementById('beasiswa-list-container')) {
         fetchBeasiswaList();
     }
 
     if (document.getElementById('lowongan-list-container')) {
-    fetchLowonganList();
-}   
+        fetchLowonganList();
+    }
+});
+
+// ============================================
+// UI/UX ENHANCEMENTS - MODERN INTERACTIONS
+// ============================================
+
+// Navbar scroll effect
+let lastScroll = 0;
+
+window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    const navbar = document.querySelector('.navbar');
+    
+    if (navbar) {
+        if (currentScroll > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    }
+    
+    lastScroll = currentScroll;
+});
+
+// Scroll indicator - create after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.body) {
+        const scrollIndicator = document.createElement('div');
+        scrollIndicator.className = 'scroll-indicator';
+        document.body.appendChild(scrollIndicator);
+        
+        window.addEventListener('scroll', () => {
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            const scrollTop = window.pageYOffset;
+            const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
+            scrollIndicator.style.width = scrollPercent + '%';
+        });
+    }
+});
+
+// Intersection Observer for scroll animations
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('animated');
+            observer.unobserve(entry.target);
+        }
+    });
+}, observerOptions);
+
+// Apply animation to elements on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const animateElements = document.querySelectorAll('.card, .koorbid-card, .gallery-item, .event-card, .info-card, .prestasi-card, .univ-card, .lowongan-card');
+    
+    animateElements.forEach((el, index) => {
+        el.classList.add('animate-on-scroll');
+        el.style.transitionDelay = `${index * 0.1}s`;
+        observer.observe(el);
+    });
+});
+
+// Smooth scroll for anchor links - after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (href !== '#' && href.length > 1) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
+        });
+    });
+});
+
+// Add ripple effect to buttons
+function createRipple(event) {
+    const button = event.currentTarget;
+    const circle = document.createElement('span');
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+    circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+    circle.classList.add('ripple');
+
+    const ripple = button.getElementsByClassName('ripple')[0];
+    if (ripple) {
+        ripple.remove();
+    }
+
+    button.appendChild(circle);
+}
+
+// Apply ripple to all buttons - after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('button, .cta-button, .btn').forEach(button => {
+        button.addEventListener('click', createRipple);
+    });
+});
+
+// Add CSS for ripple effect
+const style = document.createElement('style');
+style.textContent = `
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        transform: scale(0);
+        animation: ripple-animation 600ms ease-out;
+        background-color: rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+    }
+    
+    @keyframes ripple-animation {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+    
+    button, .cta-button, .btn {
+        position: relative;
+        overflow: hidden;
+    }
+`;
+document.head.appendChild(style);
+
+// Lazy load images with fade-in
+if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.classList.add('fade-in');
+                    img.removeAttribute('data-src');
+                    imageObserver.unobserve(img);
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
+}
+
+// Parallax effect for hero section (subtle)
+window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    const hero = document.querySelector('.hero');
+    if (hero) {
+        hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+    }
+});
+
+// Console log for debugging (can be removed in production)
+console.log('%c✨ UI/UX Enhancements Loaded!', 'color: #008940; font-size: 16px; font-weight: bold;');

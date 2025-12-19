@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="script.js"></script>
 </head>
 <body>
 
@@ -25,20 +26,20 @@
                 <nav>
                     <ul id="nav-links">
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <a href="#" class="dropbtn">OSIM AREA</a>
                     <div class="dropdown-content">
                         <a href="info.html">Pengumuman & Berita</a>
-                        <a href="struktur.html">Struktur Organisasi</a>
+                        <a href="struktur.html" class="active">Struktur Organisasi</a>
                         <a href="arsip.html">Arsip Dokumen OSIM</a>
                         <a href="event.html">Event Mendatang</a>
                         <a href="ekskul.html">Ekstrakurikuler</a>
-                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                        <a href="coming-soon.html?feature=sipom">SIPOM - Sistem Pemilihan OSIM <span class="coming-soon-badge">Coming Soon</span></a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <a href="#" class="dropbtn">Siswa AREA</a>
                     <div class="dropdown-content">
-                        <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
+                        <a href="kebijakan.html">Kebijakan Sekolah</a>
                         <a href="beasiswa.html">Beasiswa</a>
                         <a href="kompetisi.html">Kompetisi</a>
                         <a href="cv.html">Pembuatan CV ATS</a>
@@ -48,14 +49,14 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <a href="#" class="dropbtn">Alumni Connect</a>
                     <div class="dropdown-content">
                         <a href="alumni.html">Direktori Persebaran Alumni</a>
                         <a href="https://docs.google.com/forms/d/e/1FAIpQLScK2gDXIGMH7apLJ6qS1HuebfozG-7MO9Gs5S4sgE7qwerSIQ/viewform">Daftar Menjadi Alumni MAN 1 Medan</a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Info ▼</a>
+                    <a href="#" class="dropbtn">Info</a>
                     <div class="dropdown-content">
                         <a href="who-made-this.html">Who Made This</a>
                         <a href="changelog.html">Log Perubahan</a>
@@ -63,7 +64,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Official ▼</a>
+                    <a href="#" class="dropbtn">Official</a>
                     <div class="dropdown-content">
                         <a href="https://man1medan.sch.id/">MAN 1 MEDAN Official Website</a>
                         <a href="https://perpustakaan.man1medan.sch.id/">Perpustakaan MAN 1 Medan</a>
@@ -123,6 +124,31 @@
     </footer>
 
    <script src="script.js"></script>
+   <script>
+   // Fallback hamburger menu
+   (function() {
+       setTimeout(function() {
+           const btn = document.querySelector('.menu-toggle');
+           const nav = document.getElementById('nav-links');
+           if (!btn || !nav || btn.getAttribute('data-menu-toggle-initialized')) return;
+           let isToggling = false;
+           const handleClick = function(e) {
+               if (isToggling) { e.preventDefault(); e.stopPropagation(); return false; }
+               isToggling = true;
+               e.preventDefault();
+               e.stopPropagation();
+               nav.classList.toggle('active');
+               setTimeout(function() { isToggling = false; }, 300);
+               return false;
+           };
+           btn.onclick = handleClick;
+           btn.ontouchend = handleClick;
+           btn.style.cursor = 'pointer';
+           btn.style.pointerEvents = 'auto';
+           btn.style.zIndex = '99999';
+       }, 500);
+   })();
+   </script>
 
 </body>
 </html>

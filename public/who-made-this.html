@@ -26,18 +26,18 @@
                 <nav>
                     <ul id="nav-links">
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <a href="#" class="dropbtn">OSIM AREA</a>
                     <div class="dropdown-content">
                         <a href="info.html">Pengumuman & Berita</a>
                         <a href="struktur.html">Struktur Organisasi</a>
                         <a href="arsip.html">Arsip Dokumen OSIM</a>
                         <a href="event.html">Event Mendatang</a>
                         <a href="ekskul.html">Ekstrakurikuler</a>
-                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                        <a href="coming-soon.html?feature=sipom">SIPOM - Sistem Pemilihan OSIM <span class="coming-soon-badge">Coming Soon</span></a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <a href="#" class="dropbtn active">Siswa AREA</a>
                     <div class="dropdown-content">
                         <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
                         <a href="beasiswa.html">Beasiswa</a>
@@ -50,7 +50,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <a href="#" class="dropbtn">Alumni Connect</a>
                     <div class="dropdown-content">
                         <a href="alumni.html">Direktori Persebaran Alumni</a>
                         <a href="#">Donasi dan crowdfunding project</a>
@@ -60,7 +60,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Info ▼</a>
+                    <a href="#" class="dropbtn">Info</a>
                     <div class="dropdown-content">
                         <a href="who-made-this.html">Who Made This</a>
                         <a href="changelog.html">Log Perubahan</a>
@@ -68,7 +68,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Official ▼</a>
+                    <a href="#" class="dropbtn">Official</a>
                     <div class="dropdown-content">
                         <a href="#">MAN 1 MEDAN Official Website</a>
                         <a href="#">Perpustakaan MAN 1 Medan</a>
@@ -99,5 +99,30 @@
     </footer>
 
     <script src="script.js"></script>
+    <script>
+    // Fallback hamburger menu
+    (function() {
+        setTimeout(function() {
+            const btn = document.querySelector('.menu-toggle');
+            const nav = document.getElementById('nav-links');
+            if (!btn || !nav || btn.getAttribute('data-menu-toggle-initialized')) return;
+            let isToggling = false;
+            const handleClick = function(e) {
+                if (isToggling) { e.preventDefault(); e.stopPropagation(); return false; }
+                isToggling = true;
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.toggle('active');
+                setTimeout(function() { isToggling = false; }, 300);
+                return false;
+            };
+            btn.onclick = handleClick;
+            btn.ontouchend = handleClick;
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+            btn.style.zIndex = '99999';
+        }, 500);
+    })();
+    </script>
 </body>
 </html>

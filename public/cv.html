@@ -27,18 +27,18 @@
                 <nav>
                     <ul id="nav-links">
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <a href="#" class="dropbtn">OSIM AREA</a>
                     <div class="dropdown-content">
                         <a href="info.html">Pengumuman & Berita</a>
                         <a href="struktur.html">Struktur Organisasi</a>
                         <a href="arsip.html">Arsip Dokumen OSIM</a>
                         <a href="event.html">Event Mendatang</a>
                         <a href="ekskul.html">Ekstrakurikuler</a>
-                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                        <a href="coming-soon.html?feature=sipom">SIPOM - Sistem Pemilihan OSIM <span class="coming-soon-badge">Coming Soon</span></a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <a href="#" class="dropbtn active">Siswa AREA</a>
                     <div class="dropdown-content">
                         <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
                         <a href="beasiswa.html">Beasiswa</a>
@@ -50,14 +50,14 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <a href="#" class="dropbtn">Alumni Connect</a>
                     <div class="dropdown-content">
                         <a href="alumni.html">Direktori Persebaran Alumni</a>
                         <a href="https://docs.google.com/forms/d/e/1FAIpQLScK2gDXIGMH7apLJ6qS1HuebfozG-7MO9Gs5S4sgE7qwerSIQ/viewform">Daftar Menjadi Alumni MAN 1 Medan</a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Info ▼</a>
+                    <a href="#" class="dropbtn">Info</a>
                     <div class="dropdown-content">
                         <a href="who-made-this.html">Who Made This</a>
                         <a href="changelog.html">Log Perubahan</a>
@@ -65,7 +65,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Official ▼</a>
+                    <a href="#" class="dropbtn">Official</a>
                     <div class="dropdown-content">
                         <a href="https://man1medan.sch.id/">MAN 1 MEDAN Official Website</a>
                         <a href="https://perpustakaan.man1medan.sch.id/">Perpustakaan MAN 1 Medan</a>
@@ -80,31 +80,44 @@
     <div class="cv-builder-container">
         
         <div class="cv-editor no-print">
-            <h2>Editor CV Profesional</h2>
-            <p class="section-lead">Isi data diri Anda. Preview di sebelah kanan akan berubah secara otomatis.</p>
+            <h2>Editor CV Profesional ATS-Friendly</h2>
+            <p class="section-lead">Isi data diri Anda. Preview di sebelah kanan akan berubah secara otomatis. CV ini dioptimalkan untuk ATS (Applicant Tracking System).</p>
             
             <form id="cv-form" onsubmit="return false;">
                 <div class="editor-section">
                     <h3>Informasi Personal</h3>
                     <div class="form-group">
-                        <label>Nama Lengkap</label>
-                        <input type="text" id="input-name" placeholder="Contoh: Muhammad Kahfi" oninput="updateCV()">
+                        <label>Nama Lengkap *</label>
+                        <input type="text" id="input-name" placeholder="Contoh: Muhammad Kahfi" oninput="updateCV()" required>
                     </div>
                     <div class="form-group">
                         <label>Headline / Posisi (Opsional)</label>
                         <input type="text" id="input-headline" placeholder="Contoh: Tech Enthusiast | Web Developer" oninput="updateCV()">
+                        <small class="form-tip">Gunakan keyword yang relevan dengan posisi yang diinginkan</small>
                     </div>
                     <div class="form-group">
-                        <label>Kontak (Email | HP | Lokasi | Link)</label>
-                        <input type="text" id="input-contact" placeholder="Medan | email@anda.com | 0812-xxxx | linkedin.com/in/..." oninput="updateCV()">
-                        <small>Format bebas, pisahkan dengan tanda "|" atau koma.</small>
+                        <label>Email *</label>
+                        <input type="email" id="input-email" placeholder="email@anda.com" oninput="updateCV()" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nomor HP</label>
+                        <input type="tel" id="input-phone" placeholder="0812-3456-7890" oninput="updateCV()">
+                    </div>
+                    <div class="form-group">
+                        <label>Lokasi</label>
+                        <input type="text" id="input-location" placeholder="Contoh: Medan, Sumatera Utara" oninput="updateCV()">
+                    </div>
+                    <div class="form-group">
+                        <label>LinkedIn / Portfolio (Opsional)</label>
+                        <input type="url" id="input-linkedin" placeholder="linkedin.com/in/username atau portfolio.com" oninput="updateCV()">
                     </div>
                 </div>
 
                 <div class="editor-section">
-                    <h3>Profil Singkat</h3>
+                    <h3>Profil Singkat / Summary</h3>
                     <div class="form-group">
-                        <textarea id="input-summary" rows="4" placeholder="Deskripsikan diri Anda, pengalaman utama, dan tujuan karir secara ringkas..." oninput="updateCV()"></textarea>
+                        <textarea id="input-summary" rows="4" placeholder="Deskripsikan diri Anda, pengalaman utama, dan tujuan karir secara ringkas (2-3 kalimat)..." oninput="updateCV()"></textarea>
+                        <small class="form-tip">💡 Tips ATS: Gunakan keyword dari job description, fokus pada achievement dan value yang bisa diberikan</small>
                     </div>
                 </div>
 
@@ -112,23 +125,29 @@
                     <h3>Riwayat Pendidikan</h3>
                     <div id="education-inputs">
                         <div class="dynamic-item">
-                            <input type="text" class="edu-school" placeholder="Nama Sekolah / Universitas" oninput="updateCV()">
+                            <input type="text" class="edu-school" placeholder="Nama Sekolah / Universitas *" oninput="updateCV()">
                             <input type="text" class="edu-degree" placeholder="Jurusan / Tingkat" oninput="updateCV()">
-                            <input type="text" class="edu-year" placeholder="Tahun (Contoh: 2020 - 2023)" oninput="updateCV()">
+                            <input type="text" class="edu-year" placeholder="Tahun (Contoh: 2020 - 2023 atau Jan 2020 - Des 2023)" oninput="updateCV()">
                         </div>
                     </div>
                     <button type="button" class="add-btn" onclick="addEducationField()">+ Tambah Pendidikan</button>
+                    <small class="form-tip">💡 Tips: Mulai dari pendidikan terbaru, gunakan format tanggal konsisten</small>
                 </div>
 
                 <div class="editor-section">
                     <h3>Keterampilan (Skills)</h3>
                     <div class="form-group">
-                        <label>Professional Skills (Hard Skills)</label>
+                        <label>Professional Skills (Hard Skills) *</label>
                         <textarea id="input-hard-skills" rows="2" placeholder="Contoh: HTML, CSS, JavaScript, Desain Grafis, Manajemen Proyek" oninput="updateCV()"></textarea>
+                        <small class="form-tip">Pisahkan dengan koma. Gunakan nama skill yang standar dan umum digunakan</small>
                     </div>
                     <div class="form-group">
                         <label>Soft Skills</label>
                         <textarea id="input-soft-skills" rows="2" placeholder="Contoh: Kepemimpinan, Komunikasi Publik, Kerja Tim, Pemecahan Masalah" oninput="updateCV()"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Bahasa (Opsional)</label>
+                        <textarea id="input-languages" rows="2" placeholder="Contoh: Bahasa Indonesia (Native), Bahasa Inggris (Fluent), Bahasa Arab (Intermediate)" oninput="updateCV()"></textarea>
                     </div>
                 </div>
 
@@ -136,13 +155,15 @@
                     <h3>Pengalaman Organisasi / Kerja</h3>
                     <div id="experience-inputs">
                         <div class="dynamic-item">
-                            <input type="text" class="exp-role" placeholder="Jabatan / Posisi" oninput="updateCV()">
-                            <input type="text" class="exp-org" placeholder="Nama Organisasi / Perusahaan" oninput="updateCV()">
-                            <input type="text" class="exp-year" placeholder="Periode (Contoh: 2023 - 2024)" oninput="updateCV()">
-                            <textarea class="exp-desc" rows="2" placeholder="Deskripsi singkat tugas/pencapaian..." oninput="updateCV()"></textarea>
+                            <input type="text" class="exp-role" placeholder="Jabatan / Posisi *" oninput="updateCV()">
+                            <input type="text" class="exp-org" placeholder="Nama Organisasi / Perusahaan *" oninput="updateCV()">
+                            <input type="text" class="exp-year" placeholder="Periode (Contoh: Jan 2023 - Des 2024)" oninput="updateCV()">
+                            <textarea class="exp-desc" rows="2" placeholder="Deskripsi tugas dan tanggung jawab..." oninput="updateCV()"></textarea>
+                            <textarea class="exp-achievement" rows="2" placeholder="Pencapaian / Impact (Opsional, contoh: Meningkatkan engagement 30%, Memimpin tim 5 orang)" oninput="updateCV()"></textarea>
                         </div>
                     </div>
                     <button type="button" class="add-btn" onclick="addExperienceField()">+ Tambah Pengalaman</button>
+                    <small class="form-tip">💡 Tips: Gunakan action verbs (Mengelola, Meningkatkan, Memimpin) dan sertakan angka/metrics jika ada</small>
                 </div>
 
                 <div class="editor-section">
@@ -159,6 +180,17 @@
 
             <div class="action-buttons">
                 <button onclick="window.print()" class="cta-button print-btn">🖨️ Simpan sebagai PDF</button>
+                <div class="ats-tips-box">
+                    <h4>💡 Tips CV ATS-Friendly:</h4>
+                    <ul>
+                        <li>Gunakan keyword dari job description</li>
+                        <li>Sertakan angka/metrics untuk pencapaian</li>
+                        <li>Gunakan format tanggal konsisten (Bulan Tahun)</li>
+                        <li>Hindari tabel, kolom, atau grafik kompleks</li>
+                        <li>Gunakan nama skill yang standar dan umum</li>
+                        <li>Pastikan semua informasi penting terisi</li>
+                    </ul>
+                </div>
                 <p style="margin-top: 10px; font-size: 0.85rem; color: #666; text-align: center;">Tips: Pilih "Save as PDF" pada menu printer. Atur margin ke 'None' untuk hasil terbaik.</p>
             </div>
         </div>
@@ -168,9 +200,9 @@
                 
                 <div class="cv-header-section">
                     <h1 id="preview-name">NAMA LENGKAP</h1>
-                    <p id="preview-headline" class="cv-headline">Headline / Posisi Anda</p>
+                    <p id="preview-headline" class="cv-headline"></p>
                     <div id="preview-contact" class="cv-contact-line">
-                        Alamat | Email | Nomor HP | Link Portfolio
+                        Email | Nomor HP | Lokasi | LinkedIn/Portfolio
                     </div>
                 </div>
 
@@ -202,6 +234,10 @@
                             <div class="cv-sub-label">Soft Skills:</div>
                             <div id="preview-soft-skills" class="cv-text-content">-</div>
                         </div>
+                        <div class="cv-skill-group" style="margin-top: 5px;" id="languages-section">
+                            <div class="cv-sub-label">Bahasa:</div>
+                            <div id="preview-languages" class="cv-text-content">-</div>
+                        </div>
                     </div>
 
                     <div class="cv-section-block">
@@ -224,6 +260,32 @@
         </div>
 
     </div>
+    <script src="script.js"></script>
+    <script>
+    // Fallback hamburger menu
+    (function() {
+        setTimeout(function() {
+            const btn = document.querySelector('.menu-toggle');
+            const nav = document.getElementById('nav-links');
+            if (!btn || !nav || btn.getAttribute('data-menu-toggle-initialized')) return;
+            let isToggling = false;
+            const handleClick = function(e) {
+                if (isToggling) { e.preventDefault(); e.stopPropagation(); return false; }
+                isToggling = true;
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.toggle('active');
+                setTimeout(function() { isToggling = false; }, 300);
+                return false;
+            };
+            btn.onclick = handleClick;
+            btn.ontouchend = handleClick;
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+            btn.style.zIndex = '99999';
+        }, 500);
+    })();
+    </script>
 
 </body>
 </html>

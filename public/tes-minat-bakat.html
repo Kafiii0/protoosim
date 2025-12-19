@@ -9,113 +9,613 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="script.js"></script>
-
+    
     <style>
-        /* Grid Layout */
-        .test-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+        /* Tes Minat Bakat - Custom Styles */
+        .test-page-container {
+            min-height: calc(100vh - 70px);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 50%, rgba(240, 147, 251, 0.85) 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            padding: 3rem 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Card Styling */
-        .test-card {
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            padding: 2rem;
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Container */
+        #test-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .start-card,
+        .question-card,
+        .results-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 3rem;
             text-align: center;
-            transition: all 0.3s ease;
-            border: 1px solid #f0f0f0;
+            color: #fff;
+            animation: fadeInSlideUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Animation */
+        .loading-container {
             display: flex;
             flex-direction: column;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .test-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 30px rgba(0, 137, 64, 0.15);
-            border-color: #008940;
-        }
-
-        /* Logo Placeholder */
-        .test-logo-wrapper {
-            height: 80px;
-            width: 80px;
-            margin: 0 auto 1.5rem;
-            background: #f8f9fa;
-            border-radius: 50%;
-            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #008940;
-            border: 2px solid #e9ecef;
+            gap: 1.5rem;
+            padding: 3rem;
         }
 
-        /* Badge Kategori */
-        .test-badge {
-            background-color: #e6ffe6;
-            color: #008940;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            align-self: center;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .test-card h3 {
-            font-size: 1.25rem;
-            color: #34495e;
-            margin-bottom: 0.8rem;
-            font-weight: 700;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        .test-card p {
-            font-size: 0.95rem;
-            color: #666;
-            line-height: 1.6;
-            flex-grow: 1; /* Mendorong tombol ke bawah */
-            margin-bottom: 2rem;
+        .loading-text {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
-        /* Tombol */
-        .test-btn {
-            background-color: #008940;
-            color: white;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background 0.3s, transform 0.2s;
-            display: inline-block;
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Footer Branding */
+        .test-footer {
+            position: relative;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
             width: 100%;
         }
 
-        .test-btn:hover {
-            background-color: #00642e;
-            transform: scale(1.02);
+        .test-footer-content {
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        /* Label Rekomendasi */
-        .recommended-label {
-            position: absolute;
-            top: 15px;
-            right: 15px;
+        .test-footer-content p {
+            margin: 0;
+        }
+
+        /* Start Screen */
+        .start-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .start-card h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .start-description {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .start-form {
+            margin-bottom: 2rem;
+        }
+
+        .name-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .name-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-start {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .test-info {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .test-info p {
+            margin: 0.5rem 0;
+        }
+
+        /* Question Screen */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .question-number {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .question-text {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            color: #fff;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .answer-btn {
+            font-family: 'Inter', sans-serif;
+            padding: 1.2rem 2rem;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+
+        .answer-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateX(5px) scale(1.02);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .answer-btn:active {
+            transform: translateX(3px) scale(0.98);
+        }
+
+        .answer-icon {
             font-size: 1.2rem;
-            color: #f1c40f;
-            cursor: help;
+        }
+
+        /* Results Screen */
+        .results-header {
+            margin-bottom: 2rem;
+        }
+
+        .results-header h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .student-name-result {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .top-category {
+            margin-bottom: 2rem;
+        }
+
+        .top-category h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .category-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .category-badge.top {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .category-badge h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .category-badge p {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1rem;
+        }
+
+        .score-display {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .all-scores {
+            margin-bottom: 2rem;
+        }
+
+        .all-scores h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .scores-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .score-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .score-item.highlight {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .score-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .score-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .score-value {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .career-suggestions {
+            margin-bottom: 2rem;
+        }
+
+        .career-suggestions h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .careers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+
+        .career-tag {
+            font-family: 'Inter', sans-serif;
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        /* Results Layout - Two Column */
+        .results-content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .results-text-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .results-chart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .results-chart-section h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            text-align: center;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            min-height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #riasec-radar-chart {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .results-content-wrapper {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .results-chart-section {
+                order: -1; /* Chart di atas di mobile */
+            }
+
+            .chart-container {
+                max-width: 100%;
+                height: 350px;
+                min-height: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .test-page-container {
+                padding: 2rem 1rem;
+                min-height: calc(100vh - 140px); /* Account for footer */
+            }
+
+            .start-card,
+            .question-card,
+            .results-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .start-card h2,
+            .results-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .question-text {
+                font-size: 1.2rem;
+            }
+
+            .results-actions {
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+            }
+
+            .chart-container {
+                height: 300px;
+                min-height: 300px;
+                padding: 1rem;
+            }
+
+            .answer-btn {
+                padding: 1rem 1.5rem;
+                font-size: 0.95rem;
+            }
+
+            .test-footer {
+                padding: 0.8rem;
+            }
+
+            .test-footer-content {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chart-container {
+                height: 280px;
+                min-height: 280px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            #background-3d-canvas {
+                display: none;
+            }
+
+            .test-footer {
+                display: none;
+            }
+
+            .test-page-container {
+                background: white;
+                padding: 0;
+            }
+
+            .start-card,
+            .question-card,
+            .results-card {
+                background: white;
+                color: #333;
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            .results-actions {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -135,18 +635,18 @@
                 <nav>
                     <ul id="nav-links">
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">OSIM AREA ▼</a>
+                    <a href="#" class="dropbtn">OSIM AREA</a>
                     <div class="dropdown-content">
                         <a href="info.html">Pengumuman & Berita</a>
                         <a href="struktur.html">Struktur Organisasi</a>
                         <a href="arsip.html">Arsip Dokumen OSIM</a>
                         <a href="event.html">Event Mendatang</a>
                         <a href="ekskul.html">Ekstrakurikuler</a>
-                        <a href="event.html">SIPOM - Sistem Pemilihan OSIM</a>
+                        <a href="coming-soon.html?feature=sipom">SIPOM - Sistem Pemilihan OSIM <span class="coming-soon-badge">Coming Soon</span></a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn active">Siswa AREA ▼</a>
+                    <a href="#" class="dropbtn active">Siswa AREA</a>
                     <div class="dropdown-content">
                         <a href="kebijakan.html" class="active">Kebijakan Sekolah</a>
                         <a href="beasiswa.html">Beasiswa</a>
@@ -154,18 +654,18 @@
                         <a href="cv.html">Pembuatan CV ATS</a>
                         <a href="universitas.html">Info Universitas</a>
                         <a href="siswa-berprestasi.html">Siswa Berprestasi</a>
-                        <a href="tes-minat-bakat.html"">Tes Minat Bakat</a>
+                        <a href="tes-minat-bakat.html">Tes Minat Bakat</a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Alumni Connect ▼</a>
+                    <a href="#" class="dropbtn">Alumni Connect</a>
                     <div class="dropdown-content">
                         <a href="alumni.html">Direktori Persebaran Alumni</a>
                         <a href="https://docs.google.com/forms/d/e/1FAIpQLScK2gDXIGMH7apLJ6qS1HuebfozG-7MO9Gs5S4sgE7qwerSIQ/viewform">Daftar Menjadi Alumni MAN 1 Medan</a>
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Info ▼</a>
+                    <a href="#" class="dropbtn">Info</a>
                     <div class="dropdown-content">
                         <a href="who-made-this.html">Who Made This</a>
                         <a href="changelog.html">Log Perubahan</a>
@@ -173,7 +673,7 @@
                     </div>
                 </li>
                 <li class="dropdown">
-                    <a href="#" class="dropbtn">Official ▼</a>
+                    <a href="#" class="dropbtn">Official</a>
                     <div class="dropdown-content">
                         <a href="https://man1medan.sch.id/">MAN 1 MEDAN Official Website</a>
                         <a href="https://perpustakaan.man1medan.sch.id/">Perpustakaan MAN 1 Medan</a>
@@ -185,16 +685,21 @@
             </div>
         </header>
 
-    <section class="content-section" style="padding-top: 3rem;">
-        <div class="container">
-            <h2>Tes Minat & Bakat</h2>
-            <p class="section-lead">Kenali potensimu lebih dalam. Berikut adalah rekomendasi website terpercaya untuk tes kepribadian dan penjurusan.</p>
-            
-            <div id="aptitude-test-container" class="test-grid">
-                <p style="grid-column: 1/-1; text-align: center;">Memuat data...</p>
-            </div>
+    <!-- Canvas 3D Background -->
+    <canvas id="background-3d-canvas"></canvas>
+
+    <div class="test-page-container">
+        <div id="test-container">
+            <!-- Content akan di-render oleh JavaScript -->
         </div>
-    </section>
+    </div>
+
+    <!-- Footer Branding -->
+    <footer class="test-footer">
+        <div class="test-footer-content">
+            <p>&copy; 2025 Tes Minat Bakat - OSIM MAN 1 Medan</p>
+        </div>
+    </footer>
     
     <footer>
         <div class="container footer-grid">
@@ -219,76 +724,48 @@
         </div>
     </footer>
 
+    <!-- Three.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Background 3D -->
+    <script src="js/background3d.js"></script>
+    
+    <!-- Load Data -->
+    <script src="data/tes-minat-bakat-data.js"></script>
+    
+    <!-- Load Test Logic -->
+    <script src="js/tes-minat-bakat.js"></script>
+
     <script>
-        // Data Website Tes Minat Bakat (Edit di sini langsung)
-        const aptitudeTestsData = [
-            {
-                name: "16Personalities",
-                url: "https://www.16personalities.com/id",
-                category: "Kepribadian (MBTI)",
-                description: "Tes kepribadian paling populer untuk mengetahui tipe karakter, kekuatan, dan kelemahan diri.",
-                isRecommended: true,
-                logoText: "16P" 
-            },
-            {
-                name: "AkuPintar.id",
-                url: "https://akupintar.id/mp/tes-jurusan-kuliah",
-                category: "Minat & Jurusan",
-                description: "Tes komprehensif untuk menentukan jurusan kuliah dan karir yang paling cocok dengan minat siswa.",
-                isRecommended: true,
-                logoText: "AP"
-            },
-            {
-                name: "Quipper Campus",
-                url: "https://campus.quipper.com/tests",
-                category: "Uji Potensi",
-                description: "Bantu kenali potensi diri dan rekomendasi kampus serta jurusan yang sesuai.",
-                isRecommended: false,
-                logoText: "QC"
-            },
-            {
-                name: "Rencanamu",
-                url: "https://rencanamu.id/",
-                category: "Karir & Kuliah",
-                description: "Platform persiapan kuliah dan karir dengan berbagai asesmen psikologi.",
-                isRecommended: false,
-                logoText: "RM"
-            },
-             {
-                name: "Tes Bakat Indonesia",
-                url: "https://tesbakatindonesia.com/",
-                category: "Minat Bakat",
-                description: "Layanan psikotes online untuk pemetaan bakat dan penjurusan siswa.",
-                isRecommended: false,
-                logoText: "TBI"
-            }
-        ];
-
-        // Fungsi Render
-        function renderAptitudeTests() {
-            const container = document.getElementById('aptitude-test-container');
-            if (!container) return;
-
-            const html = aptitudeTestsData.map(test => `
-                <div class="test-card">
-                    ${test.isRecommended ? '<div class="recommended-label" title="Sangat Direkomendasikan">⭐</div>' : ''}
-                    <div class="test-logo-wrapper">
-                        ${test.logoText}
-                    </div>
-                    <span class="test-badge">${test.category}</span>
-                    <h3>${test.name}</h3>
-                    <p>${test.description}</p>
-                    <a href="${test.url}" target="_blank" class="test-btn">Coba Tes Sekarang ➜</a>
-                </div>
-            `).join('');
-
-            container.innerHTML = html;
-        }
-
-        // Jalankan saat halaman dimuat
-        document.addEventListener('DOMContentLoaded', () => {
-            renderAptitudeTests();
-        });
+    // Fallback hamburger menu
+    (function() {
+        setTimeout(function() {
+            const btn = document.querySelector('.menu-toggle');
+            const nav = document.getElementById('nav-links');
+            if (!btn || !nav || btn.getAttribute('data-menu-toggle-initialized')) return;
+            let isToggling = false;
+            const handleClick = function(e) {
+                if (isToggling) { e.preventDefault(); e.stopPropagation(); return false; }
+                isToggling = true;
+                e.preventDefault();
+                e.stopPropagation();
+                nav.classList.toggle('active');
+                setTimeout(function() { isToggling = false; }, 300);
+                return false;
+            };
+            btn.onclick = handleClick;
+            btn.ontouchend = handleClick;
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+            btn.style.zIndex = '99999';
+        }, 500);
+    })();
     </script>
 
 </body>
